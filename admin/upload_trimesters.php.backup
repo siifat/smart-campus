@@ -1,0 +1,284 @@
+<?php
+/**
+ * Upload Trimesters from CSV
+ */
+session_start();
+if (!isset($_SESSION['admin_logged_in'])) {
+    header('Location: login.php');
+    exit;
+}
+
+require_once('../config/database.php');
+
+$message = '';
+$message_type = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
+    $file = $_FILES['file'];
+    $file_ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    
+    if ($file_ext !== 'csv') {
+        $message = 'Invalid file type. Please upload CSV file.';
+        $message_type = 'error';
+    } else {
+        $uploaded_file = $file['tmp_name'];
+        $trimesters = [];
+        
+        if (($handle = fopen($uploaded_file, 'r')) !== FALSE) {
+            $header = fgetcsv($handle); // Skip header row
+            while (($data = fgetcsv($handle)) !== FALSE) {
+                if (count($data) >= 7 && !empty($data[0])) {
+                    $trimesters[] = [
+                        'code' => trim($data[0]),
+                        'name' => trim($data[1]),
+                        'type' => trim($data[2]),
+                        'year' => (int)trim($data[3]),
+                        'start_date' => trim($data[4]),
+                        'end_date' => trim($data[5]),
+                        'is_current' => (int)trim($data[6])
+                    ];
+                }
+            }
+            fclose($handle);
+        }
+        
+        if (!empty($trimesters)) {
+            // If any trimester is set as current, unset all existing current flags
+            $has_current = false;
+            foreach ($trimesters as $trim) {
+                if ($trim['is_current'] == 1) {
+                    $has_current = true;
+                    break;
+                }
+            }
+            
+            if ($has_current) {
+                $conn->query("UPDATE trimesters SET is_current = FALSE");
+            }
+            
+            $inserted = 0;
+            $skipped = 0;
+            
+            foreach ($trimesters as $trim) {
+                $stmt = $conn->prepare("INSERT INTO trimesters (trimester_code, trimester_name, trimester_type, year, start_date, end_date, is_current) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE trimester_name = VALUES(trimester_name), start_date = VALUES(start_date), end_date = VALUES(end_date), is_current = VALUES(is_current)");
+                $stmt->bind_param('ssssssi', $trim['code'], $trim['name'], $trim['type'], $trim['year'], $trim['start_date'], $trim['end_date'], $trim['is_current']);
+                
+                if ($stmt->execute()) {
+                    if ($stmt->affected_rows > 0) {
+                        $inserted++;
+                    } else {
+                        $skipped++;
+                    }
+                }
+                $stmt->close();
+            }
+            
+            $message = "✅ Upload complete! Inserted/Updated: $inserted trimesters. Skipped: $skipped";
+            $message_type = 'success';
+        }
+    }
+}
+
+$result = $conn->query("SELECT * FROM trimesters ORDER BY year DESC, trimester_code DESC");
+$existing_trimesters = $result->fetch_all(MYSQLI_ASSOC);
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Trimesters - Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 { color: #667eea; }
+        .back-btn {
+            padding: 10px 20px;
+            background: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 5px solid;
+        }
+        .alert-success { background: #d4edda; color: #155724; border-color: #28a745; }
+        .alert-error { background: #f8d7da; color: #721c24; border-color: #dc3545; }
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 50px;
+            text-align: center;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .upload-area:hover { background: #e9ecef; border-color: #764ba2; }
+        .upload-icon { font-size: 4em; margin-bottom: 20px; }
+        input[type="file"] { display: none; }
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+            margin: 10px 5px;
+        }
+        .btn:hover { background: #764ba2; }
+        .btn-secondary { background: #6c757d; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th { background: #f8f9fa; color: #667eea; font-weight: bold; }
+        .badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+        .badge-current {
+            background: #28a745;
+            color: white;
+        }
+        .format-guide {
+            background: #e7f3ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid #17a2b8;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📅 Upload Trimesters</h1>
+            <a href="index.php" class="back-btn">← Back to Dashboard</a>
+        </div>
+        
+        <?php if ($message): ?>
+            <div class="alert alert-<?php echo $message_type; ?>">
+                <?php echo $message; ?>
+            </div>
+        <?php endif; ?>
+        
+        <div class="card">
+            <h2 style="color: #667eea; margin-bottom: 20px;">📤 Upload File</h2>
+            <form method="POST" enctype="multipart/form-data">
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📁</div>
+                    <h3>Click to select or drag & drop file</h3>
+                    <p style="color: #666; margin-top: 10px;">Supported format: CSV</p>
+                    <p id="fileName" style="margin-top: 15px; color: #667eea; font-weight: bold;"></p>
+                </div>
+                <input type="file" id="fileInput" name="file" accept=".csv" onchange="document.getElementById('fileName').textContent = '✓ Selected: ' + this.files[0].name">
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button type="submit" class="btn">📤 Upload & Import</button>
+                    <a href="download_template.php?type=trimesters" class="btn btn-secondary">📥 Download Template</a>
+                </div>
+            </form>
+        </div>
+        
+        <div class="card">
+            <h2 style="color: #667eea; margin-bottom: 20px;">📋 File Format Guide</h2>
+            <div class="format-guide">
+                <strong>CSV Format:</strong>
+                <pre style="background: white; padding: 15px; border-radius: 5px; margin-top: 10px; overflow-x: auto;">trimester_code,trimester_name,trimester_type,year,start_date,end_date,is_current
+251,Spring 2025,trimester,2025,2025-01-01,2025-05-31,0
+252,Summer 2025,trimester,2025,2025-06-01,2025-08-31,0
+253,Fall 2025,trimester,2025,2025-09-01,2025-12-31,1</pre>
+                <ul style="margin: 15px 0 0 20px; line-height: 1.8;">
+                    <li><code>trimester_type</code>: Either "trimester" or "semester"</li>
+                    <li><code>is_current</code>: 1 for current trimester, 0 for others</li>
+                    <li>Only ONE trimester should have is_current = 1</li>
+                    <li>Date format: YYYY-MM-DD</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2 style="color: #667eea; margin-bottom: 20px;">📊 Current Trimesters (<?php echo count($existing_trimesters); ?>)</h2>
+            <?php if (empty($existing_trimesters)): ?>
+                <p style="text-align: center; color: #999; padding: 40px;">No trimesters found. Upload a file to add trimesters.</p>
+            <?php else: ?>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Trimester Name</th>
+                            <th>Type</th>
+                            <th>Year</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($existing_trimesters as $trim): ?>
+                            <tr>
+                                <td><strong><?php echo htmlspecialchars($trim['trimester_code']); ?></strong></td>
+                                <td><?php echo htmlspecialchars($trim['trimester_name']); ?></td>
+                                <td><?php echo htmlspecialchars($trim['trimester_type']); ?></td>
+                                <td><?php echo $trim['year']; ?></td>
+                                <td><?php echo date('M d, Y', strtotime($trim['start_date'])); ?></td>
+                                <td><?php echo date('M d, Y', strtotime($trim['end_date'])); ?></td>
+                                <td>
+                                    <?php if ($trim['is_current']): ?>
+                                        <span class="badge badge-current">✓ CURRENT</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+    </div>
+</body>
+</html>

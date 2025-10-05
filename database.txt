@@ -1,0 +1,4 @@
+Database name: uiu_smart_campus
+Server: localhost
+User: root
+Password: NONE

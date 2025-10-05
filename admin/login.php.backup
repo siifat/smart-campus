@@ -1,0 +1,547 @@
+<?php
+/**
+ * Admin Login<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - UIU Smart Campus</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">session_start();
+
+// Default admin credentials (change these!)
+$admin_username = 'admin';
+$admin_password = 'admin123'; // In production, use password_hash()
+
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
+    
+    if ($username === $admin_username && $password === $admin_password) {
+        $_SESSION['admin_logged_in'] = true;
+        $_SESSION['admin_username'] = $username;
+        header('Location: index.php');
+        exit;
+    } else {
+        $error = 'Invalid username or password';
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - UIU Smart Campus</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Particle Background */
+        #particle-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        
+        /* Mouse glow effect */
+        .mouse-glow {
+            position: fixed;
+            width: 700px;
+            height: 700px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(246, 139, 31, 0.12), transparent 70%);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: opacity 0.3s ease;
+            z-index: 1;
+            mix-blend-mode: screen;
+        }
+        
+        /* Security Grid Pattern */
+        .security-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(246, 139, 31, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(246, 139, 31, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        /* Glass Card with Enhanced Security Look */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 2px solid rgba(246, 139, 31, 0.2);
+            box-shadow: 
+                0 0 60px rgba(246, 139, 31, 0.15),
+                0 20px 80px rgba(0, 0, 0, 0.5),
+                inset 0 0 80px rgba(246, 139, 31, 0.02);
+        }
+        
+        /* Security Badge */
+        .security-badge {
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 30px rgba(220, 38, 38, 0.6);
+            animation: pulse-glow 2s ease-in-out infinite;
+            z-index: 10;
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { 
+                box-shadow: 0 0 30px rgba(220, 38, 38, 0.6);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 50px rgba(220, 38, 38, 0.8);
+                transform: scale(1.05);
+            }
+        }
+        
+        .security-badge i {
+            font-size: 32px;
+            color: white;
+        }
+        
+        /* Admin Shield Logo */
+        .admin-shield {
+            background: linear-gradient(135deg, #f68b1f 0%, #fbbf24 100%);
+            animation: shield-pulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes shield-pulse {
+            0%, 100% { 
+                box-shadow: 0 0 30px rgba(246, 139, 31, 0.4);
+            }
+            50% { 
+                box-shadow: 0 0 50px rgba(246, 139, 31, 0.6);
+            }
+        }
+        
+        /* Input Styles */
+        .input-field {
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px solid rgba(100, 116, 139, 0.3);
+            color: #e2e8f0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: #f68b1f;
+            box-shadow: 0 0 0 4px rgba(246, 139, 31, 0.15);
+            background: rgba(15, 23, 42, 0.8);
+        }
+        
+        .input-field::placeholder {
+            color: #64748b;
+        }
+        
+        /* Hide browser password controls */
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+            display: none !important;
+        }
+        
+        input[type="password"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        
+        /* Eye Toggle Button */
+        .eye-btn {
+            color: #94a3b8;
+            transition: all 0.3s ease;
+        }
+        
+        .eye-btn:hover {
+            color: #f68b1f;
+        }
+        
+        /* Custom Checkbox */
+        .custom-checkbox {
+            position: relative;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            border: 2px solid #475569;
+            border-radius: 6px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(15, 23, 42, 0.6);
+        }
+        
+        .custom-checkbox:checked {
+            background: linear-gradient(135deg, #f68b1f, #fbbf24);
+            border-color: #f68b1f;
+            animation: checkBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .custom-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .custom-checkbox:hover {
+            border-color: #f68b1f;
+            box-shadow: 0 0 0 4px rgba(246, 139, 31, 0.1);
+        }
+        
+        @keyframes checkBounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        /* Primary Button */
+        .btn-primary {
+            background: linear-gradient(135deg, #f68b1f, #fbbf24);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .btn-primary:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(246, 139, 31, 0.4);
+        }
+        
+        /* Loading Animation */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        
+        /* Error Alert */
+        .error-alert {
+            animation: shake 0.5s ease;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        /* Floating orbs for extra security atmosphere */
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+        
+        .floating-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(60px);
+            animation: float 15s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <canvas id="particle-bg"></canvas>
+    
+    <!-- Mouse Glow Effect -->
+    <div class="mouse-glow" id="mouseGlow" style="opacity: 0;"></div>
+    
+    <!-- Security Grid -->
+    <div class="security-grid"></div>
+    
+    <!-- Floating Security Orbs -->
+    <div class="floating-orb" style="top: 10%; left: 10%; width: 300px; height: 300px; background: rgba(220, 38, 38, 0.1); animation-delay: 0s;"></div>
+    <div class="floating-orb" style="bottom: 10%; right: 10%; width: 250px; height: 250px; background: rgba(246, 139, 31, 0.1); animation-delay: 5s;"></div>
+    <div class="floating-orb" style="top: 50%; left: 50%; width: 200px; height: 200px; background: rgba(251, 191, 36, 0.08); animation-delay: 10s;"></div>
+    
+    <!-- Login Container -->
+    <div class="glass-card rounded-3xl p-10 md:p-12 w-full max-w-md fade-in relative z-10">
+        <!-- Security Badge -->
+        <div class="security-badge">
+            <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        
+        <!-- Admin Logo -->
+        <div class="text-center mb-8">
+            <div class="inline-flex w-24 h-24 admin-shield rounded-2xl items-center justify-center mb-4 shadow-lg">
+                <i class="fa-solid fa-user-shield text-5xl text-white"></i>
+            </div>
+            <h1 class="text-3xl font-black text-white mb-2">
+                Administrator Access
+            </h1>
+            <p class="text-slate-400 text-sm flex items-center justify-center gap-2">
+                <i class="fa-solid fa-lock text-red-500"></i>
+                High Security Zone - Authorized Personnel Only
+            </p>
+        </div>
+        
+        <?php if ($error): ?>
+        <div class="error-alert bg-red-500/10 border-2 border-red-500/50 text-red-400 px-4 py-3 rounded-xl mb-6 flex items-center gap-3">
+            <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+            <span class="font-semibold"><?php echo htmlspecialchars($error); ?></span>
+        </div>
+        <?php endif; ?>
+        
+        <!-- Login Form -->
+        <form method="POST" action="" id="loginForm" class="space-y-6">
+            <!-- Username -->
+            <div>
+                <label for="username" class="block text-sm font-bold text-slate-300 mb-2">
+                    <i class="fa-solid fa-user-tie mr-2 text-orange-500"></i>Administrator Username
+                </label>
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        required
+                        autofocus
+                        autocomplete="username"
+                        class="input-field w-full px-4 py-3 rounded-xl text-base"
+                        placeholder="Enter admin username"
+                    >
+                </div>
+            </div>
+            
+            <!-- Password -->
+            <div>
+                <label for="password" class="block text-sm font-bold text-slate-300 mb-2">
+                    <i class="fa-solid fa-key mr-2 text-orange-500"></i>Password
+                </label>
+                <div class="relative">
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        required
+                        autocomplete="current-password"
+                        class="input-field w-full px-4 py-3 pr-12 rounded-xl text-base"
+                        placeholder="Enter your password"
+                        style="-webkit-appearance: none; -moz-appearance: none; appearance: none;"
+                    >
+                    <button 
+                        type="button" 
+                        onclick="togglePassword()"
+                        class="eye-btn absolute right-4 top-1/2 -translate-y-1/2 hover:text-orange-500 focus:outline-none z-10"
+                    >
+                        <i id="eyeIcon" class="fa-solid fa-eye text-lg"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Remember Me -->
+            <div class="flex items-center justify-between">
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" name="remember" class="custom-checkbox">
+                    <span class="ml-2 text-sm text-slate-400">Remember this device</span>
+                </label>
+                <a href="#" class="text-sm text-orange-500 hover:text-orange-400 font-semibold transition-colors">
+                    <i class="fa-solid fa-rotate-right mr-1"></i>Reset Password
+                </a>
+            </div>
+            
+            <!-- Submit Button -->
+            <button 
+                type="submit" 
+                class="btn-primary w-full py-4 rounded-xl font-bold text-white text-lg shadow-lg relative overflow-hidden"
+            >
+                <span class="relative z-10 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    Access Control Panel
+                </span>
+            </button>
+        </form>
+        
+        <!-- Security Info -->
+        <div class="mt-6 bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+            <p class="text-xs text-blue-300 flex items-start gap-2">
+                <i class="fa-solid fa-circle-info mt-0.5"></i>
+                <span>All login attempts are monitored and logged. Unauthorized access attempts will be reported to system administrators.</span>
+            </p>
+        </div>
+        
+        <!-- Default Credentials Info -->
+        <div class="mt-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+            <p class="text-xs text-yellow-300 flex items-start gap-2">
+                <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                <span><strong>Default Credentials:</strong> admin / admin123 - <strong>Change these in production!</strong></span>
+            </p>
+        </div>
+        
+        <!-- Back Link -->
+        <div class="text-center mt-6">
+            <a href="../index.html" class="text-sm text-slate-400 hover:text-orange-500 font-semibold transition-all inline-flex items-center gap-2 group">
+                <i class="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
+                Return to Main Site
+            </a>
+        </div>
+    </div>
+    
+    <script>
+        // Particle Background
+        const canvas = document.getElementById('particle-bg');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        function createParticles() {
+            particles = [];
+            const numParticles = window.innerWidth > 768 ? 100 : 50;
+            for (let i = 0; i < numParticles; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 1.5 + 0.5,
+                    speedX: (Math.random() - 0.5) * 0.5,
+                    speedY: (Math.random() - 0.5) * 0.5
+                });
+            }
+        }
+        
+        function drawParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'rgba(246, 139, 31, 0.4)';
+            
+            particles.forEach(p => {
+                p.x += p.speedX;
+                p.y += p.speedY;
+                if (p.x < 0 || p.x > canvas.width) p.speedX *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.speedY *= -1;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            requestAnimationFrame(drawParticles);
+        }
+        
+        createParticles();
+        drawParticles();
+        
+        // Mouse Glow Effect
+        const mouseGlow = document.getElementById('mouseGlow');
+        let mouseX = 0;
+        let mouseY = 0;
+        let glowX = 0;
+        let glowY = 0;
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            mouseGlow.style.opacity = '1';
+        });
+        
+        function animateGlow() {
+            glowX += (mouseX - glowX) * 0.1;
+            glowY += (mouseY - glowY) * 0.1;
+            mouseGlow.style.left = glowX + 'px';
+            mouseGlow.style.top = glowY + 'px';
+            requestAnimationFrame(animateGlow);
+        }
+        animateGlow();
+        
+        document.addEventListener('mouseleave', () => {
+            mouseGlow.style.opacity = '0';
+        });
+        
+        // Toggle Password Visibility
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eyeIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        }
+    </script>
+</body>
+</html>

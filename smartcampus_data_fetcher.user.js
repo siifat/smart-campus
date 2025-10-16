@@ -5,6 +5,7 @@
 // @description  Fetches student data from UCAM portal and syncs to Smart Campus database (including password capture)
 // @author       UIU Smart Campus Team
 // @match        *://ucam.uiu.ac.bd/Security/Login.aspx*
+// @match        *://ucam.uiu.ac.bd/Security/LogIn.aspx*
 // @match        *://ucam.uiu.ac.bd/Security/StudentHome.aspx*
 // @icon         https://www.google.com/s2/favicons?domain=uiu.ac.bd
 // @grant        GM_xmlhttpRequest

@@ -630,6 +630,76 @@ $show_page_title = true;
             margin-bottom: 12px;
         }
         
+        /* Exam Type Buttons */
+        .exam-type-btn {
+            padding: 12px 24px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .exam-type-btn:hover {
+            color: var(--text-primary);
+        }
+        
+        .exam-type-btn.active {
+            color: #f68b1f;
+            border-bottom-color: #f68b1f;
+        }
+        
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Alert Messages */
+        .alert {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+        }
+        
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+        
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+        
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #3b82f6;
+        }
+        
         /* Responsive */
         @media (max-width: 1024px) {
             .sidebar {
@@ -788,13 +858,25 @@ $show_page_title = true;
             
             <!-- Exam Schedule Tab -->
             <div id="exam-schedule" class="tab-content">
-                <div style="margin-bottom: 20px;">
-                    <h2 style="font-size: 24px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">
-                        Examination Schedule
-                    </h2>
-                    <p style="color: var(--text-secondary); font-size: 14px;">
-                        View your upcoming exam schedule for the current trimester
-                    </p>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 16px;">
+                    <div>
+                        <h2 style="font-size: 24px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">
+                            Examination Schedule
+                        </h2>
+                        <p style="color: var(--text-secondary); font-size: 14px;">
+                            View your personalized exam schedule for the current trimester
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Exam Type Selector -->
+                <div style="display: flex; gap: 12px; margin-bottom: 24px; border-bottom: 2px solid var(--border-color); padding-bottom: 0;">
+                    <button class="exam-type-btn active" data-type="Midterm" onclick="switchExamType('Midterm')">
+                        <i class="fas fa-file-alt"></i> Midterm Exams
+                    </button>
+                    <button class="exam-type-btn" data-type="Final" onclick="switchExamType('Final')">
+                        <i class="fas fa-graduation-cap"></i> Final Exams
+                    </button>
                 </div>
                 
                 <div id="exam-schedule-container">
@@ -857,6 +939,9 @@ $show_page_title = true;
     </main>
     
     <script>
+        // Current exam type being viewed
+        let currentExamType = 'Midterm';
+        
         // Tab Switching
         function switchTab(tabName) {
             // Hide all tabs
@@ -874,7 +959,120 @@ $show_page_title = true;
             
             // Activate corresponding button
             event.target.classList.add('active');
+            
+            // Load exam schedule when switching to exam tab
+            if (tabName === 'exam-schedule') {
+                loadExamSchedule(currentExamType);
+            }
         }
+        
+        // Switch Exam Type
+        function switchExamType(examType) {
+            currentExamType = examType;
+            
+            // Update active button
+            document.querySelectorAll('.exam-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Load schedule for selected type
+            loadExamSchedule(examType);
+        }
+        
+        // Load Exam Schedule
+        async function loadExamSchedule(examType) {
+            const container = document.getElementById('exam-schedule-container');
+            container.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading exam schedule...</p></div>';
+            
+            try {
+                const response = await fetch(`api/get_exam_routine.php?exam_type=${examType}`);
+                const data = await response.json();
+                
+                if (data.success && data.exams.length > 0) {
+                    let html = '';
+                    
+                    data.exams.forEach(exam => {
+                        const examDate = new Date(exam.exam_date);
+                        const formattedDate = examDate.toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                        });
+                        
+                        html += `
+                            <div class="exam-card">
+                                <div class="exam-date">
+                                    <i class="fas fa-calendar-day"></i>
+                                    ${formattedDate}
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 12px;">
+                                    <div>
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; font-weight: 600; text-transform: uppercase;">Course</div>
+                                        <div style="font-weight: 700; color: var(--text-primary); font-size: 15px;">
+                                            ${exam.course_code}
+                                        </div>
+                                        <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+                                            ${exam.course_title || 'N/A'}
+                                        </div>
+                                        <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+                                            Section ${exam.section}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; font-weight: 600; text-transform: uppercase;">Time</div>
+                                        <div style="font-weight: 700; color: var(--text-primary); font-size: 15px;">
+                                            <i class="fas fa-clock" style="color: #f68b1f; margin-right: 6px;"></i>
+                                            ${exam.exam_time || 'TBA'}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; font-weight: 600; text-transform: uppercase;">Room</div>
+                                        <div style="font-weight: 700; color: var(--text-primary); font-size: 15px;">
+                                            <i class="fas fa-map-marker-alt" style="color: #f68b1f; margin-right: 6px;"></i>
+                                            ${exam.room || 'TBA'}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; font-weight: 600; text-transform: uppercase;">Instructor</div>
+                                        <div style="font-weight: 700; color: var(--text-primary); font-size: 15px;">
+                                            <i class="fas fa-user" style="color: #f68b1f; margin-right: 6px;"></i>
+                                            ${exam.teacher_initial || 'TBA'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-times"></i>
+                            <h3>No ${examType} Exam Schedule Available</h3>
+                            <p>The exam routine for this trimester has not been uploaded by the administration yet.</p>
+                            <p style="margin-top: 8px; font-size: 13px; opacity: 0.8;">Please check back later or contact your department.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading exam schedule:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+                        <h3>Error Loading Schedule</h3>
+                        <p>There was an error loading your exam schedule. Please try again.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Load initial exam schedule
+        document.addEventListener('DOMContentLoaded', () => {
+            loadExamSchedule(currentExamType);
+        });
     </script>
 </body>
 </html>

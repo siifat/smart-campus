@@ -98,6 +98,10 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                 <i class="fas fa-upload"></i>
                 <span>Upload Courses</span>
             </a>
+            <a href="upload_exam_routines.php" class="menu-item <?php echo $current_page == 'upload_exam_routines' ? 'active' : ''; ?>">
+                <i class="fas fa-calendar-check"></i>
+                <span>Upload Exam Routines</span>
+            </a>
         </div>
         
         <!-- System Section -->

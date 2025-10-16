@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 16, 2025 at 06:30 PM
+-- Generation Time: Oct 16, 2025 at 08:04 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -946,6 +946,14 @@ CREATE TABLE `resource_views` (
   `viewed_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `resource_views`
+--
+
+INSERT INTO `resource_views` (`view_id`, `resource_id`, `student_id`, `viewed_at`) VALUES
+(7, 5, '0112320240', '2025-10-16 17:04:46'),
+(9, 7, '0112320240', '2025-10-16 17:12:00');
+
 -- --------------------------------------------------------
 
 --
@@ -980,7 +988,7 @@ CREATE TABLE `students` (
 --
 
 INSERT INTO `students` (`student_id`, `password_hash`, `full_name`, `email`, `phone`, `date_of_birth`, `blood_group`, `father_name`, `mother_name`, `program_id`, `current_trimester_number`, `total_completed_credits`, `current_cgpa`, `total_points`, `profile_picture`, `admission_date`, `status`, `created_at`, `updated_at`, `focus_streak`) VALUES
-('0112320240', '$2y$10$mgklUzlH9GUrwXCHTYFzGu.2Q4.86CX9heeSa9G8qH05au3B06Gpa', 'Sifatullah', NULL, '+8801608962341', '2004-08-22', 'A+', 'Mohammad Abdus Salam', 'Shoheli Parvin Nazma', 1, 1, 0, 4.00, 0, '9cf6a546-c5d4-42b1-8c18-6e9cccd167ca.jpg', NULL, 'active', '2025-10-02 09:02:25', '2025-10-02 22:24:53', 0);
+('0112320240', '$2y$10$mgklUzlH9GUrwXCHTYFzGu.2Q4.86CX9heeSa9G8qH05au3B06Gpa', 'Sifatullah', NULL, '+8801608962341', '2004-08-22', 'A+', 'Mohammad Abdus Salam', 'Shoheli Parvin Nazma', 1, 1, 0, 4.00, 100, '9cf6a546-c5d4-42b1-8c18-6e9cccd167ca.jpg', NULL, 'active', '2025-10-02 09:02:25', '2025-10-16 17:09:40', 0);
 
 -- --------------------------------------------------------
 
@@ -1055,7 +1063,11 @@ INSERT INTO `student_activities` (`activity_id`, `student_id`, `activity_type`, 
 (39, '0112320240', 'other', 'Uploaded Exam Routine', 'Uploaded Midterm exam routine: 3 exams found', NULL, NULL, 'fa-calendar-upload', '2025-10-16 15:11:59'),
 (40, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-16 15:16:47'),
 (41, '0112320240', 'other', 'Uploaded Exam Routine', 'Uploaded Final exam routine: 3 exams found', NULL, NULL, 'fa-calendar-upload', '2025-10-16 15:19:12'),
-(42, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-16 16:30:01');
+(42, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-16 16:30:01'),
+(43, '0112320240', 'note_upload', 'Uploaded Resource', 'Uploaded: dbms note', NULL, 5, 'fa-upload', '2025-10-16 17:01:07'),
+(44, '0112320240', 'note_upload', 'Uploaded Resource', 'Uploaded: a', NULL, 6, 'fa-upload', '2025-10-16 17:05:19'),
+(45, '0112320240', 'note_upload', 'Uploaded Resource', 'Uploaded: f', NULL, 7, 'fa-upload', '2025-10-16 17:09:40'),
+(46, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-16 17:11:54');
 
 -- --------------------------------------------------------
 
@@ -1259,6 +1271,14 @@ CREATE TABLE `uploaded_resources` (
   `is_featured` tinyint(1) DEFAULT 0,
   `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Uploaded resources and notes by students';
+
+--
+-- Dumping data for table `uploaded_resources`
+--
+
+INSERT INTO `uploaded_resources` (`resource_id`, `student_id`, `course_id`, `category_id`, `title`, `description`, `resource_type`, `file_path`, `file_name`, `file_size`, `file_type`, `external_link`, `trimester_id`, `points_awarded`, `views_count`, `downloads_count`, `likes_count`, `is_approved`, `is_featured`, `uploaded_at`) VALUES
+(5, '0112320240', NULL, 1, 'dbms note', '', 'file', 'uploads/resources/0112320240_1760634067_68f124d3c8bb8.pdf', 'NID-card.pdf', 786899, '0', '', NULL, 50, 1, 0, 0, 1, 0, '2025-10-16 17:01:07'),
+(7, '0112320240', NULL, 1, 'f', '', 'file', 'uploads/resources/0112320240_1760634580_68f126d4a1ae4.pdf', 'fron-end design idea.pdf', 111748, '0', '', NULL, 50, 1, 0, 0, 1, 0, '2025-10-16 17:09:40');
 
 --
 -- Triggers `uploaded_resources`
@@ -1830,7 +1850,7 @@ ALTER TABLE `resource_likes`
 -- AUTO_INCREMENT for table `resource_views`
 --
 ALTER TABLE `resource_views`
-  MODIFY `view_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `view_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `student_achievements`
@@ -1842,7 +1862,7 @@ ALTER TABLE `student_achievements`
 -- AUTO_INCREMENT for table `student_activities`
 --
 ALTER TABLE `student_activities`
-  MODIFY `activity_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
+  MODIFY `activity_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
 
 --
 -- AUTO_INCREMENT for table `student_advisors`
@@ -1890,7 +1910,7 @@ ALTER TABLE `trimesters`
 -- AUTO_INCREMENT for table `uploaded_resources`
 --
 ALTER TABLE `uploaded_resources`
-  MODIFY `resource_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `resource_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- Constraints for dumped tables

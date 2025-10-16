@@ -150,6 +150,15 @@ function getAllResources($conn, $student_id) {
     
     $resources = [];
     while ($row = $result->fetch_assoc()) {
+        // Validate file existence for file-type resources
+        if ($row['resource_type'] === 'file' && !empty($row['file_path'])) {
+            $file_path = '../../' . $row['file_path'];
+            if (!file_exists($file_path)) {
+                error_log("Skipping orphaned resource {$row['resource_id']}: File not found at {$file_path}");
+                continue; // Skip this resource if file doesn't exist
+            }
+        }
+        
         // Convert boolean fields
         $row['user_liked'] = (bool)$row['user_liked'];
         $row['user_bookmarked'] = (bool)$row['user_bookmarked'];

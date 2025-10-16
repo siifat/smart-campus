@@ -745,6 +745,27 @@ $show_page_title = true;
                         </div>
                     </div>
                     
+                    <!-- Special Filters -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold mb-3" style="color: var(--text-secondary);">
+                            <i class="fas fa-filter"></i> Special Filters
+                        </label>
+                        <div class="space-y-2">
+                            <button class="filter-tag w-full" 
+                                    data-special="bookmarked"
+                                    id="bookmarkedFilter">
+                                <i class="fas fa-bookmark"></i>
+                                <span>My Bookmarks</span>
+                            </button>
+                            <button class="filter-tag w-full" 
+                                    data-special="my_uploads"
+                                    id="myUploadsFilter">
+                                <i class="fas fa-upload"></i>
+                                <span>My Uploads</span>
+                            </button>
+                        </div>
+                    </div>
+                    
                     <!-- Clear Filters -->
                     <button id="clearFilters" class="btn-secondary w-full">
                         <i class="fas fa-times"></i> Clear Filters
@@ -756,12 +777,16 @@ $show_page_title = true;
             <div class="lg:col-span-3">
                 <!-- Stats Bar -->
                 <div class="glass-card mb-6 fade-in">
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between flex-wrap gap-4">
                         <div style="color: var(--text-secondary); font-weight: 600;">
                             <i class="fas fa-info-circle"></i>
                             <span id="totalResources">Loading...</span> resources found
                         </div>
                         <div class="flex gap-3">
+                            <button onclick="showUploadModal()" class="btn-primary">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                Upload Resource
+                            </button>
                             <button id="gridView" class="action-btn active">
                                 <i class="fas fa-th"></i>
                             </button>
@@ -798,6 +823,158 @@ $show_page_title = true;
         </div>
     </div>
 
+    <!-- Upload Notes Modal -->
+    <div id="uploadNotesModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 9999; align-items: center; justify-content: center; overflow-y: auto; padding: 20px;">
+        <div style="background: var(--card-bg); border-radius: 20px; padding: 32px; max-width: 700px; width: 100%; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3); position: relative; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="font-size: 24px; font-weight: 800; color: var(--text-primary);">
+                    <i class="fas fa-cloud-upload-alt" style="color: #f68b1f;"></i>
+                    Upload Resource
+                </h2>
+                <button onclick="closeUploadModal()" style="width: 36px; height: 36px; border-radius: 8px; background: var(--bg-secondary); border: none; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--text-secondary);">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="uploadForm" onsubmit="submitUpload(event)" enctype="multipart/form-data">
+                <!-- Resource Type Selection -->
+                <div style="margin-bottom: 24px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 12px; color: var(--text-secondary);">
+                        <i class="fas fa-layer-group"></i> Resource Type
+                    </label>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                        <button type="button" onclick="selectUploadType('file')" id="uploadTypeFile" class="upload-type-btn active"
+                                style="padding: 16px; border-radius: 12px; border: 2px solid var(--border-color); background: var(--bg-secondary); cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                            <i class="fas fa-file-upload" style="font-size: 24px; color: #f68b1f;"></i>
+                            <span style="font-weight: 600; color: var(--text-primary);">Upload File</span>
+                            <small style="color: var(--text-secondary); font-size: 12px;">PDF, DOC, PPT, ZIP</small>
+                        </button>
+                        <button type="button" onclick="selectUploadType('link')" id="uploadTypeLink" class="upload-type-btn"
+                                style="padding: 16px; border-radius: 12px; border: 2px solid var(--border-color); background: var(--bg-secondary); cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                            <i class="fas fa-link" style="font-size: 24px; color: #3b82f6;"></i>
+                            <span style="font-weight: 600; color: var(--text-primary);">Share Link</span>
+                            <small style="color: var(--text-secondary); font-size: 12px;">YouTube, Drive, etc.</small>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Title -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--text-secondary);">
+                        <i class="fas fa-heading"></i> Title *
+                    </label>
+                    <input type="text" name="title" id="uploadTitle" required
+                           placeholder="e.g., CSE 2215 Final Exam Notes"
+                           style="width: 100%; padding: 12px 16px; border: 2px solid var(--border-color); border-radius: 12px; background: var(--bg-secondary); color: var(--text-primary);">
+                </div>
+
+                <!-- Description -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--text-secondary);">
+                        <i class="fas fa-align-left"></i> Description
+                    </label>
+                    <textarea name="description" id="uploadDescription" rows="3"
+                              placeholder="Brief description of the resource..."
+                              style="width: 100%; padding: 12px 16px; border: 2px solid var(--border-color); border-radius: 12px; background: var(--bg-secondary); color: var(--text-primary); resize: vertical;"></textarea>
+                </div>
+
+                <!-- Category -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--text-secondary);">
+                        <i class="fas fa-tags"></i> Category *
+                    </label>
+                    <select name="category_id" id="uploadCategory" required
+                            style="width: 100%; padding: 12px 16px; border: 2px solid var(--border-color); border-radius: 12px; background: var(--bg-secondary); color: var(--text-primary);">
+                        <option value="">Select a category</option>
+                        <?php
+                        // Reset the categories result set
+                        $categories->data_seek(0);
+                        while ($cat = $categories->fetch_assoc()):
+                        ?>
+                            <option value="<?php echo $cat['category_id']; ?>">
+                                <?php echo htmlspecialchars($cat['category_name']); ?>
+                            </option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
+
+                <!-- Course (Optional) -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--text-secondary);">
+                        <i class="fas fa-book"></i> Related Course (Optional)
+                    </label>
+                    <select name="course_id" id="uploadCourse"
+                            style="width: 100%; padding: 12px 16px; border: 2px solid var(--border-color); border-radius: 12px; background: var(--bg-secondary); color: var(--text-primary);">
+                        <option value="">No specific course</option>
+                        <?php
+                        // Get all courses for upload
+                        $all_courses = $conn->query("SELECT course_id, course_code, course_name FROM courses ORDER BY course_code");
+                        while ($course = $all_courses->fetch_assoc()):
+                        ?>
+                            <option value="<?php echo $course['course_id']; ?>">
+                                <?php echo htmlspecialchars($course['course_code']) . ' - ' . htmlspecialchars($course['course_name']); ?>
+                            </option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
+
+                <!-- File Upload Section -->
+                <div id="fileUploadSection" style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--text-secondary);">
+                        <i class="fas fa-file"></i> Select File *
+                    </label>
+                    <div style="border: 2px dashed var(--border-color); border-radius: 12px; padding: 32px; text-align: center; background: var(--bg-secondary); transition: all 0.3s ease;"
+                         ondragover="event.preventDefault(); this.style.borderColor='#f68b1f';"
+                         ondragleave="this.style.borderColor='var(--border-color)';"
+                         ondrop="event.preventDefault(); this.style.borderColor='var(--border-color)'; handleFileSelect(event);">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 48px; color: #f68b1f; margin-bottom: 16px;"></i>
+                        <p style="color: var(--text-secondary); margin-bottom: 12px; font-weight: 600;">
+                            Drag & drop your file here or click to browse
+                        </p>
+                        <input type="file" name="file" id="fileInput" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.rar,.jpg,.jpeg,.png,.txt,.xlsx,.xls"
+                               onchange="handleFileSelect(event)"
+                               style="display: none;">
+                        <button type="button" onclick="document.getElementById('fileInput').click()"
+                                style="padding: 10px 24px; border-radius: 10px; background: linear-gradient(135deg, #f68b1f, #fbbf24); color: white; border: none; font-weight: 600; cursor: pointer;">
+                            Choose File
+                        </button>
+                        <p style="color: var(--text-secondary); font-size: 12px; margin-top: 12px;">
+                            Max 50MB • PDF, DOC, PPT, ZIP, Images
+                        </p>
+                    </div>
+                    <div id="fileInfo" style="display: none; margin-top: 12px; padding: 12px; background: rgba(246, 139, 31, 0.1); border-radius: 8px; color: var(--text-primary);"></div>
+                </div>
+
+                <!-- Link Section (Hidden by default) -->
+                <div id="linkUploadSection" style="display: none; margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--text-secondary);">
+                        <i class="fas fa-link"></i> Resource Link *
+                    </label>
+                    <input type="url" name="external_link" id="externalLink"
+                           placeholder="https://youtube.com/watch?v=... or https://drive.google.com/..."
+                           style="width: 100%; padding: 12px 16px; border: 2px solid var(--border-color); border-radius: 12px; background: var(--bg-secondary); color: var(--text-primary);">
+                    <p style="color: var(--text-secondary); font-size: 12px; margin-top: 8px;">
+                        <i class="fas fa-info-circle"></i> Supports YouTube, Google Drive, and other public links
+                    </p>
+                </div>
+
+                <input type="hidden" name="resource_type" id="resourceType" value="file">
+
+                <!-- Submit Button -->
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button type="button" onclick="closeUploadModal()"
+                            style="flex: 1; padding: 14px; border-radius: 12px; border: 2px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        Cancel
+                    </button>
+                    <button type="submit" id="uploadSubmitBtn"
+                            style="flex: 2; padding: 14px; border-radius: 12px; background: linear-gradient(135deg, #f68b1f, #fbbf24); color: white; border: none; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(246, 139, 31, 0.3);">
+                        <i class="fas fa-upload"></i> Upload & Earn 50 Points
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // State management
         let currentPage = 1;
@@ -808,7 +985,8 @@ $show_page_title = true;
             category: 'all',
             type: 'all',
             search: '',
-            sort: 'recent'
+            sort: 'recent',
+            special: null  // 'bookmarked' or 'my_uploads' or null
         };
         let viewMode = 'grid';
         
@@ -852,12 +1030,35 @@ $show_page_title = true;
                 });
             });
             
+            // Special filters
+            document.querySelectorAll('[data-special]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const specialType = this.dataset.special;
+                    
+                    // Toggle special filter
+                    if (currentFilters.special === specialType) {
+                        // Deactivate
+                        currentFilters.special = null;
+                        this.classList.remove('active');
+                    } else {
+                        // Activate
+                        document.querySelectorAll('[data-special]').forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        currentFilters.special = specialType;
+                    }
+                    
+                    filterResources();
+                });
+            });
+            
             // Clear filters
             document.getElementById('clearFilters').addEventListener('click', function() {
                 document.getElementById('searchInput').value = '';
                 document.getElementById('sortSelect').value = 'recent';
                 document.querySelectorAll('[data-category]')[0].click();
                 document.querySelectorAll('[data-type]')[0].click();
+                document.querySelectorAll('[data-special]').forEach(b => b.classList.remove('active'));
+                currentFilters.special = null;
             });
             
             // View mode toggle
@@ -912,6 +1113,15 @@ $show_page_title = true;
         // Filter resources based on current filters
         function filterResources() {
             filteredResources = allResources.filter(resource => {
+                // Special filters (bookmarked or my uploads)
+                if (currentFilters.special === 'bookmarked' && !resource.user_bookmarked) {
+                    return false;
+                }
+                
+                if (currentFilters.special === 'my_uploads' && resource.student_id !== '<?php echo $student_id; ?>') {
+                    return false;
+                }
+                
                 // Category filter
                 if (currentFilters.category !== 'all' && resource.category_id != currentFilters.category) {
                     return false;
@@ -1018,7 +1228,6 @@ $show_page_title = true;
         function createResourceCard(resource) {
             const card = document.createElement('div');
             card.className = 'resource-card bg-white rounded-xl p-6 cursor-pointer';
-            card.onclick = () => openResourceModal(resource.resource_id);
             
             const typeIcon = getResourceTypeIcon(resource.resource_type);
             const categoryColor = resource.category_color || '#6b7280';
@@ -1080,6 +1289,24 @@ $show_page_title = true;
                 </div>
             `;
             
+            // Set onclick AFTER innerHTML to prevent it from being cleared
+            // For PDFs, open in viewer directly. For others, open modal
+            console.log('Resource:', resource.title, 'Type:', resource.resource_type, 'FileType:', resource.file_type, 'FilePath:', resource.file_path);
+            
+            // Check if it's a PDF by file_type OR file extension
+            const isPDF = resource.resource_type === 'file' && (
+                resource.file_type === 'application/pdf' || 
+                (resource.file_path && resource.file_path.toLowerCase().endsWith('.pdf'))
+            );
+            
+            if (isPDF) {
+                console.log('Setting PDF viewer for:', resource.title);
+                card.onclick = () => viewResource(resource.resource_id);
+            } else {
+                console.log('Setting modal for:', resource.title);
+                card.onclick = () => openResourceModal(resource.resource_id);
+            }
+            
             return card;
         }
         
@@ -1087,7 +1314,6 @@ $show_page_title = true;
         function createResourceListItem(resource) {
             const item = document.createElement('div');
             item.className = 'resource-card bg-white rounded-xl p-6 cursor-pointer flex items-center gap-6';
-            item.onclick = () => openResourceModal(resource.resource_id);
             
             const typeIcon = getResourceTypeIcon(resource.resource_type);
             const categoryColor = resource.category_color || '#6b7280';
@@ -1143,6 +1369,21 @@ $show_page_title = true;
                     </div>
                 </div>
             `;
+            
+            // Set onclick AFTER innerHTML to prevent it from being cleared
+            // For PDFs, open in viewer directly. For others, open modal
+            
+            // Check if it's a PDF by file_type OR file extension
+            const isPDF = resource.resource_type === 'file' && (
+                resource.file_type === 'application/pdf' || 
+                (resource.file_path && resource.file_path.toLowerCase().endsWith('.pdf'))
+            );
+            
+            if (isPDF) {
+                item.onclick = () => viewResource(resource.resource_id);
+            } else {
+                item.onclick = () => openResourceModal(resource.resource_id);
+            }
             
             return item;
         }
@@ -1291,18 +1532,24 @@ $show_page_title = true;
                             ${resource.user_bookmarked ? 'Bookmarked' : 'Bookmark'}
                         </button>
                         ${resource.resource_type === 'file' ? `
-                            ${resource.file_type === 'application/pdf' ? `
-                                <button onclick="previewPDF(${resource.resource_id}, '${resource.file_path}', '${resource.title}')" 
+                            ${(resource.file_type === 'application/pdf' || (resource.file_path && resource.file_path.toLowerCase().endsWith('.pdf'))) ? `
+                                <button onclick="viewResource(${resource.resource_id})" 
                                         class="action-btn text-center">
                                     <i class="fas fa-eye"></i>
-                                    Preview PDF
+                                    View PDF
                                 </button>
-                            ` : ''}
-                            <button onclick="downloadResource(${resource.resource_id})" 
-                                    class="action-btn text-center ${resource.file_type === 'application/pdf' ? '' : 'col-span-2'}">
-                                <i class="fas fa-download"></i>
-                                Download (${resource.downloads_count})
-                            </button>
+                                <button onclick="downloadResource(${resource.resource_id})" 
+                                        class="action-btn text-center">
+                                    <i class="fas fa-download"></i>
+                                    Download (${resource.downloads_count})
+                                </button>
+                            ` : `
+                                <button onclick="downloadResource(${resource.resource_id})" 
+                                        class="action-btn text-center col-span-2">
+                                    <i class="fas fa-download"></i>
+                                    Download (${resource.downloads_count})
+                                </button>
+                            `}
                         ` : `
                             <a href="${resource.external_link}" target="_blank" 
                                onclick="trackView(${resource.resource_id})"
@@ -1707,19 +1954,28 @@ $show_page_title = true;
                     console.log('Parsed data:', data);
                     
                     if (data.success) {
+                        // Update points in topbar immediately
+                        const pointsElement = document.getElementById('user-points');
+                        if (pointsElement && data.new_points !== undefined) {
+                            pointsElement.textContent = new Intl.NumberFormat().format(data.new_points);
+                        }
+                        
                         await Swal.fire({
                             icon: 'success',
                             title: 'Deleted!',
                             html: `
                                 <p>Resource has been deleted.</p>
                                 <p class="text-red-600 font-semibold mt-2">-50 points deducted</p>
-                                <p class="text-gray-600 mt-2">New balance: ${data.new_points} points</p>
+                                <p class="text-gray-600 mt-2">New balance: ${new Intl.NumberFormat().format(data.new_points)} points</p>
                             `,
                             confirmButtonColor: '#f68b1f'
                         });
                         
-                        // Reload page to refresh everything
-                        window.location.reload();
+                        // Close modal if open
+                        closeResourceModal();
+                        
+                        // Reload resources to refresh the list
+                        await loadResources();
                     } else {
                         showError(data.message || 'Failed to delete resource');
                     }
@@ -1730,37 +1986,164 @@ $show_page_title = true;
             }
         }
         
-        // Preview PDF in modal
-        function previewPDF(resourceId, filePath, title) {
-            Swal.fire({
-                title: title,
-                html: `
-                    <div style="width: 100%; height: 70vh;">
-                        <iframe src="../${filePath}" 
-                                style="width: 100%; height: 100%; border: none;" 
-                                type="application/pdf">
-                        </iframe>
-                    </div>
-                `,
-                width: '90%',
-                showConfirmButton: true,
-                confirmButtonText: '<i class="fas fa-download"></i> Download',
-                confirmButtonColor: '#f68b1f',
-                showCancelButton: true,
-                cancelButtonText: 'Close',
-                customClass: {
-                    container: 'pdf-preview-modal'
-                },
-                didOpen: () => {
-                    // Track view
-                    trackView(resourceId);
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    downloadResource(resourceId);
-                }
-            });
+        // View resource in dedicated viewer
+        function viewResource(resourceId) {
+            window.location.href = `viewer.php?id=${resourceId}`;
         }
+        
+        // Upload Modal Functions
+        function showUploadModal() {
+            document.getElementById('uploadNotesModal').style.display = 'flex';
+        }
+
+        function closeUploadModal() {
+            const modal = document.getElementById('uploadNotesModal');
+            modal.style.display = 'none';
+            
+            // Reset form
+            const form = document.getElementById('uploadForm');
+            if (form) {
+                form.reset();
+            }
+            
+            // Hide file info
+            const fileInfo = document.getElementById('fileInfo');
+            if (fileInfo) {
+                fileInfo.style.display = 'none';
+            }
+            
+            // Reset to file upload type
+            selectUploadType('file');
+        }
+
+        function selectUploadType(type) {
+            // Update buttons
+            document.querySelectorAll('.upload-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.borderColor = 'var(--border-color)';
+                btn.style.background = 'var(--bg-secondary)';
+            });
+
+            if (type === 'file') {
+                document.getElementById('uploadTypeFile').classList.add('active');
+                document.getElementById('uploadTypeFile').style.borderColor = '#f68b1f';
+                document.getElementById('uploadTypeFile').style.background = 'rgba(246, 139, 31, 0.1)';
+                document.getElementById('fileUploadSection').style.display = 'block';
+                document.getElementById('linkUploadSection').style.display = 'none';
+                document.getElementById('fileInput').setAttribute('required', 'required');
+                document.getElementById('externalLink').removeAttribute('required');
+            } else {
+                document.getElementById('uploadTypeLink').classList.add('active');
+                document.getElementById('uploadTypeLink').style.borderColor = '#3b82f6';
+                document.getElementById('uploadTypeLink').style.background = 'rgba(59, 130, 246, 0.1)';
+                document.getElementById('fileUploadSection').style.display = 'none';
+                document.getElementById('linkUploadSection').style.display = 'block';
+                document.getElementById('fileInput').removeAttribute('required');
+                document.getElementById('externalLink').setAttribute('required', 'required');
+            }
+
+            document.getElementById('resourceType').value = type;
+        }
+
+        function handleFileSelect(event) {
+            event.preventDefault();
+            let file;
+
+            if (event.dataTransfer) {
+                file = event.dataTransfer.files[0];
+            } else if (event.target.files) {
+                file = event.target.files[0];
+            }
+
+            if (file) {
+                const fileInfo = document.getElementById('fileInfo');
+                const fileSize = (file.size / (1024 * 1024)).toFixed(2);
+                fileInfo.innerHTML = `
+                    <strong><i class="fas fa-file"></i> ${file.name}</strong><br>
+                    <small>Size: ${fileSize} MB</small>
+                `;
+                fileInfo.style.display = 'block';
+            }
+        }
+
+        async function submitUpload(event) {
+            event.preventDefault();
+
+            const form = event.target;
+            const formData = new FormData(form);
+            const submitBtn = document.getElementById('uploadSubmitBtn');
+
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+
+            try {
+                const response = await fetch('api/upload_resource.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update points in the topbar immediately
+                    const pointsElement = document.getElementById('user-points');
+                    if (pointsElement) {
+                        pointsElement.textContent = new Intl.NumberFormat().format(data.new_points);
+                    }
+
+                    // Close modal first
+                    closeUploadModal();
+                    
+                    // Reload resources to show new upload
+                    await loadResources();
+                    
+                    // Then show success message
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        html: `
+                            <p>${data.message}</p>
+                            <p class="text-xl font-bold text-orange-500 mt-3">+50 Points Earned! 🎉</p>
+                            <p class="text-gray-600 mt-2">New Balance: ${new Intl.NumberFormat().format(data.new_points)} points</p>
+                        `,
+                        confirmButtonColor: '#f68b1f'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Upload Failed',
+                        text: data.message || 'An error occurred while uploading',
+                        confirmButtonColor: '#f68b1f'
+                    });
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'An error occurred while uploading the resource',
+                    confirmButtonColor: '#f68b1f'
+                });
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload & Earn 50 Points';
+            }
+        }
+
+        // Close modal on ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeUploadModal();
+            }
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('uploadNotesModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'uploadNotesModal') {
+                closeUploadModal();
+            }
+        });
     </script>
 </body>
 </html>

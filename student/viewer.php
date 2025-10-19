@@ -14,56 +14,125 @@ if (!isset($_SESSION['student_logged_in']) || !isset($_SESSION['student_id'])) {
 require_once('../config/database.php');
 
 $student_id = $_SESSION['student_id'];
-$resource_id = intval($_GET['id'] ?? 0);
+$resource_id = $_GET['id'] ?? '';
+$source_type = $_GET['source'] ?? 'uploaded'; // 'uploaded' or 'questionbank'
 
-if ($resource_id <= 0) {
-    die('Invalid resource ID');
-}
-
-// Get resource details
-$stmt = $conn->prepare("
-    SELECT 
-        ur.*,
-        rc.category_name,
-        rc.category_icon,
-        c.course_code,
-        c.course_name,
-        s.full_name as student_name
-    FROM uploaded_resources ur
-    LEFT JOIN resource_categories rc ON ur.category_id = rc.category_id
-    LEFT JOIN courses c ON ur.course_id = c.course_id
-    LEFT JOIN students s ON ur.student_id = s.student_id
-    WHERE ur.resource_id = ? AND ur.is_approved = 1
-");
-$stmt->bind_param('i', $resource_id);
-$stmt->execute();
-$result = $stmt->get_result();
-
-if ($result->num_rows === 0) {
-    die('Resource not found');
-}
-
-$resource = $result->fetch_assoc();
-$stmt->close();
-
-// Track view
-$check_stmt = $conn->prepare("
-    SELECT view_id FROM resource_views 
-    WHERE resource_id = ? AND student_id = ? 
-    AND viewed_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
-");
-$check_stmt->bind_param('is', $resource_id, $student_id);
-$check_stmt->execute();
-$check_result = $check_stmt->get_result();
-
-if ($check_result->num_rows === 0) {
-    $insert_stmt = $conn->prepare("INSERT INTO resource_views (resource_id, student_id) VALUES (?, ?)");
-    $insert_stmt->bind_param('is', $resource_id, $student_id);
-    $insert_stmt->execute();
+// Handle question bank resources
+if ($source_type === 'questionbank') {
+    // Question bank resource ID format: qb_{hash}
+    if (strpos($resource_id, 'qb_') !== 0) {
+        die('Invalid question bank resource ID');
+    }
     
-    $update_stmt = $conn->prepare("UPDATE uploaded_resources SET views_count = views_count + 1 WHERE resource_id = ?");
-    $update_stmt->bind_param('i', $resource_id);
-    $update_stmt->execute();
+    // Decode the file path from the resource ID
+    $file_path = $_GET['path'] ?? '';
+    if (empty($file_path)) {
+        die('File path not provided');
+    }
+    
+    // Security check: ensure path is within UIUQuestionBank
+    if (strpos($file_path, 'UIUQuestionBank/question/') !== 0) {
+        die('Invalid file path');
+    }
+    
+    $full_path = '../' . $file_path;
+    if (!file_exists($full_path)) {
+        die('File not found');
+    }
+    
+    // Extract course code from path (e.g., UIUQuestionBank/question/CSE3521/mid/CSE3521_Mid_241.pdf)
+    $path_parts = explode('/', $file_path);
+    $course_code = $path_parts[2] ?? 'Unknown';
+    $filename = basename($file_path);
+    
+    // Parse filename to get exam type and trimester
+    preg_match('/(.+?)_(Mid|Final)_(\d+)\.pdf$/i', $filename, $matches);
+    $exam_type = $matches[2] ?? 'Unknown';
+    $trimester_code = $matches[3] ?? '';
+    
+    // Get course name from database
+    $course_name = 'Question Paper';
+    $stmt = $conn->prepare("SELECT course_name FROM courses WHERE REPLACE(course_code, ' ', '') = ? LIMIT 1");
+    $stmt->bind_param('s', $course_code);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($row = $result->fetch_assoc()) {
+        $course_name = $row['course_name'];
+    }
+    $stmt->close();
+    
+    // Create resource array for question bank
+    $resource = [
+        'resource_id' => $resource_id,
+        'title' => "$course_code $exam_type Exam ($trimester_code)",
+        'course_code' => $course_code,
+        'course_name' => $course_name,
+        'file_path' => $file_path,
+        'student_name' => 'UIU Question Bank',
+        'views_count' => 0,
+        'category_name' => 'Past Papers',
+        'category_icon' => 'fas fa-file-pdf',
+        'student_id' => null,
+        'is_questionbank' => true
+    ];
+} else {
+    // Handle uploaded resources from database
+    $resource_id_int = intval($resource_id);
+    
+    if ($resource_id_int <= 0) {
+        die('Invalid resource ID');
+    }
+    
+    // Get resource details
+    $stmt = $conn->prepare("
+        SELECT 
+            ur.*,
+            rc.category_name,
+            rc.category_icon,
+            c.course_code,
+            c.course_name,
+            s.full_name as student_name
+        FROM uploaded_resources ur
+        LEFT JOIN resource_categories rc ON ur.category_id = rc.category_id
+        LEFT JOIN courses c ON ur.course_id = c.course_id
+        LEFT JOIN students s ON ur.student_id = s.student_id
+        WHERE ur.resource_id = ? AND ur.is_approved = 1
+    ");
+    $stmt->bind_param('i', $resource_id_int);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows === 0) {
+        die('Resource not found');
+    }
+    
+    $resource = $result->fetch_assoc();
+    $resource['is_questionbank'] = false;
+    $stmt->close();
+    
+    $resource_id = $resource_id_int; // Use integer for tracking views
+}
+
+// Track view (only for uploaded resources)
+if (!$resource['is_questionbank'] && is_numeric($resource_id)) {
+    $check_stmt = $conn->prepare("
+        SELECT view_id FROM resource_views 
+        WHERE resource_id = ? AND student_id = ? 
+        AND viewed_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+    ");
+    $check_stmt->bind_param('is', $resource_id, $student_id);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    
+    if ($check_result->num_rows === 0) {
+        $insert_stmt = $conn->prepare("INSERT INTO resource_views (resource_id, student_id) VALUES (?, ?)");
+        $insert_stmt->bind_param('is', $resource_id, $student_id);
+        $insert_stmt->execute();
+        
+        $update_stmt = $conn->prepare("UPDATE uploaded_resources SET views_count = views_count + 1 WHERE resource_id = ?");
+        $update_stmt->bind_param('i', $resource_id);
+        $update_stmt->execute();
+    }
 }
 
 // Determine file path
@@ -425,11 +494,19 @@ $file_url = $resource['file_path']; // Relative URL for WebViewer
             </div>
         </div>
         <div class="right">
-            <a href="api/resources.php?action=download&resource_id=<?php echo $resource_id; ?>" 
-               class="action-btn" title="Download">
-                <i class="fas fa-download"></i>
-                <span>Download</span>
-            </a>
+            <?php if ($resource['is_questionbank']): ?>
+                <a href="../<?php echo $resource['file_path']; ?>" download 
+                   class="action-btn" title="Download">
+                    <i class="fas fa-download"></i>
+                    <span>Download</span>
+                </a>
+            <?php else: ?>
+                <a href="api/resources.php?action=download&resource_id=<?php echo $resource_id; ?>" 
+                   class="action-btn" title="Download">
+                    <i class="fas fa-download"></i>
+                    <span>Download</span>
+                </a>
+            <?php endif; ?>
             <button class="menu-btn" onclick="toggleMenu()" id="menuBtn">
                 <i class="fas fa-ellipsis-v"></i>
             </button>
@@ -442,23 +519,30 @@ $file_url = $resource['file_path']; // Relative URL for WebViewer
             <i class="fas fa-folder-open"></i>
             <span>Back to Resources</span>
         </a>
-        <a href="api/resources.php?action=download&resource_id=<?php echo $resource_id; ?>" class="dropdown-item">
-            <i class="fas fa-download"></i>
-            <span>Download PDF</span>
-        </a>
-        <div class="dropdown-item" onclick="toggleBookmark()">
-            <i class="fas fa-bookmark" id="bookmarkIcon"></i>
-            <span id="bookmarkText">Bookmark</span>
-        </div>
-        <div class="dropdown-item" onclick="toggleLike()">
-            <i class="fas fa-heart" id="likeIcon"></i>
-            <span id="likeText">Like</span>
-        </div>
+        <?php if ($resource['is_questionbank']): ?>
+            <a href="../<?php echo $resource['file_path']; ?>" download class="dropdown-item">
+                <i class="fas fa-download"></i>
+                <span>Download PDF</span>
+            </a>
+        <?php else: ?>
+            <a href="api/resources.php?action=download&resource_id=<?php echo $resource_id; ?>" class="dropdown-item">
+                <i class="fas fa-download"></i>
+                <span>Download PDF</span>
+            </a>
+            <div class="dropdown-item" onclick="toggleBookmark()">
+                <i class="fas fa-bookmark" id="bookmarkIcon"></i>
+                <span id="bookmarkText">Bookmark</span>
+            </div>
+            <div class="dropdown-item" onclick="toggleLike()">
+                <i class="fas fa-heart" id="likeIcon"></i>
+                <span id="likeText">Like</span>
+            </div>
+        <?php endif; ?>
         <a href="resources.php?id=<?php echo $resource_id; ?>" class="dropdown-item">
             <i class="fas fa-info-circle"></i>
             <span>Resource Details</span>
         </a>
-        <?php if ($resource['student_id'] === $student_id): ?>
+        <?php if (!$resource['is_questionbank'] && $resource['student_id'] === $student_id): ?>
         <div class="dropdown-item" onclick="deleteMyResource()" style="color: #dc2626;">
             <i class="fas fa-trash-alt" style="color: #dc2626;"></i>
             <span>Delete My Resource (-50 Points)</span>
@@ -470,7 +554,8 @@ $file_url = $resource['file_path']; // Relative URL for WebViewer
     <div id="viewer"></div>
 
     <script>
-        const resourceId = <?php echo $resource_id; ?>;
+        const resourceId = '<?php echo addslashes($resource['resource_id']); ?>';
+        const isQuestionBank = <?php echo $resource['is_questionbank'] ? 'true' : 'false'; ?>;
         const filePath = '<?php echo addslashes($file_url); ?>';
         
         // Initialize WebViewer

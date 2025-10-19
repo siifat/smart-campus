@@ -111,8 +111,12 @@ try {
 
 /**
  * Get all approved resources with user interaction status
+ * NOW INCLUDES QUESTION BANK ITEMS!
  */
 function getAllResources($conn, $student_id) {
+    $resources = [];
+    
+    // 1. Get uploaded resources from database
     $query = "
         SELECT 
             ur.*,
@@ -148,14 +152,13 @@ function getAllResources($conn, $student_id) {
     
     $result = $stmt->get_result();
     
-    $resources = [];
     while ($row = $result->fetch_assoc()) {
         // Validate file existence for file-type resources
         if ($row['resource_type'] === 'file' && !empty($row['file_path'])) {
             $file_path = '../../' . $row['file_path'];
             if (!file_exists($file_path)) {
                 error_log("Skipping orphaned resource {$row['resource_id']}: File not found at {$file_path}");
-                continue; // Skip this resource if file doesn't exist
+                continue;
             }
         }
         
@@ -164,15 +167,156 @@ function getAllResources($conn, $student_id) {
         $row['user_bookmarked'] = (bool)$row['user_bookmarked'];
         $row['is_approved'] = (bool)$row['is_approved'];
         $row['is_featured'] = (bool)$row['is_featured'];
+        $row['source_type'] = 'uploaded';
         
         $resources[] = $row;
     }
     
+    // 2. Add Question Bank resources
+    $questionBankResources = getQuestionBankResources($conn);
+    $resources = array_merge($resources, $questionBankResources);
+    
     echo json_encode([
         'success' => true,
         'resources' => $resources,
-        'count' => count($resources)
+        'count' => count($resources),
+        'uploaded_count' => count($resources) - count($questionBankResources),
+        'questionbank_count' => count($questionBankResources)
     ]);
+}
+
+/**
+ * Get resources from UIU Question Bank
+ */
+function getQuestionBankResources($conn) {
+    $resources = [];
+    $questionBankPath = dirname(dirname(dirname(__FILE__))) . '/UIUQuestionBank/question/';
+    
+    if (!is_dir($questionBankPath)) {
+        error_log("Question bank path not found: " . $questionBankPath);
+        return $resources;
+    }
+    
+    $courseFolders = array_diff(scandir($questionBankPath), ['.', '..']);
+    
+    foreach ($courseFolders as $folder) {
+        $folderPath = $questionBankPath . $folder;
+        
+        if (is_dir($folderPath)) {
+            // Clean course code (remove spaces)
+            $cleanCourseCode = str_replace(' ', '', $folder);
+            
+            // Try to match with database
+            $stmt = $conn->prepare("
+                SELECT course_id, course_code, course_name 
+                FROM courses 
+                WHERE REPLACE(course_code, ' ', '') = ?
+                LIMIT 1
+            ");
+            $stmt->bind_param('s', $cleanCourseCode);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows > 0) {
+                $course = $result->fetch_assoc();
+                
+                // Scan mid-term questions
+                if (is_dir($folderPath . '/mid')) {
+                    $midFiles = glob($folderPath . '/mid/*.pdf');
+                    foreach ($midFiles as $file) {
+                        $filename = basename($file);
+                        $trimester = extractTrimesterFromFilename($filename);
+                        
+                        $resources[] = [
+                            'resource_id' => 'qb_' . md5($file),
+                            'title' => $course['course_code'] . ' - Midterm ' . $trimester,
+                            'description' => 'Previous midterm exam question paper for ' . $course['course_name'],
+                            'resource_type' => 'file',
+                            'file_path' => 'UIUQuestionBank/question/' . $folder . '/mid/' . $filename,
+                            'file_name' => $filename,
+                            'file_size' => filesize($file),
+                            'file_type' => 'application/pdf',
+                            'category_id' => 2,
+                            'category_name' => 'Past Papers',
+                            'category_icon' => 'fas fa-file-alt',
+                            'category_color' => '#3b82f6',
+                            'course_id' => $course['course_id'],
+                            'course_code' => $course['course_code'],
+                            'course_name' => $course['course_name'],
+                            'student_id' => 'system',
+                            'student_name' => 'UIU Question Bank',
+                            'uploaded_at' => date('Y-m-d H:i:s', filemtime($file)),
+                            'views_count' => 0,
+                            'likes_count' => 0,
+                            'downloads_count' => 0,
+                            'comments_count' => 0,
+                            'user_liked' => false,
+                            'user_bookmarked' => false,
+                            'is_approved' => true,
+                            'is_featured' => false,
+                            'source_type' => 'questionbank',
+                            'exam_type' => 'Midterm',
+                            'trimester' => $trimester
+                        ];
+                    }
+                }
+                
+                // Scan final exam questions
+                if (is_dir($folderPath . '/final')) {
+                    $finalFiles = glob($folderPath . '/final/*.pdf');
+                    foreach ($finalFiles as $file) {
+                        $filename = basename($file);
+                        $trimester = extractTrimesterFromFilename($filename);
+                        
+                        $resources[] = [
+                            'resource_id' => 'qb_' . md5($file),
+                            'title' => $course['course_code'] . ' - Final ' . $trimester,
+                            'description' => 'Previous final exam question paper for ' . $course['course_name'],
+                            'resource_type' => 'file',
+                            'file_path' => 'UIUQuestionBank/question/' . $folder . '/final/' . $filename,
+                            'file_name' => $filename,
+                            'file_size' => filesize($file),
+                            'file_type' => 'application/pdf',
+                            'category_id' => 2,
+                            'category_name' => 'Past Papers',
+                            'category_icon' => 'fas fa-file-alt',
+                            'category_color' => '#3b82f6',
+                            'course_id' => $course['course_id'],
+                            'course_code' => $course['course_code'],
+                            'course_name' => $course['course_name'],
+                            'student_id' => 'system',
+                            'student_name' => 'UIU Question Bank',
+                            'uploaded_at' => date('Y-m-d H:i:s', filemtime($file)),
+                            'views_count' => 0,
+                            'likes_count' => 0,
+                            'downloads_count' => 0,
+                            'comments_count' => 0,
+                            'user_liked' => false,
+                            'user_bookmarked' => false,
+                            'is_approved' => true,
+                            'is_featured' => false,
+                            'source_type' => 'questionbank',
+                            'exam_type' => 'Final',
+                            'trimester' => $trimester
+                        ];
+                    }
+                }
+            }
+        }
+    }
+    
+    return $resources;
+}
+
+/**
+ * Extract trimester from filename
+ * Example: CSE3521_Final_241.pdf -> 241
+ */
+function extractTrimesterFromFilename($filename) {
+    if (preg_match('/_(\d{3})\.pdf$/', $filename, $matches)) {
+        return $matches[1];
+    }
+    return 'N/A';
 }
 
 /**

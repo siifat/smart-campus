@@ -752,6 +752,12 @@ $show_page_title = true;
                         </label>
                         <div class="space-y-2">
                             <button class="filter-tag w-full" 
+                                    data-special="questionbank"
+                                    id="questionBankFilter">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span>Question Bank</span>
+                            </button>
+                            <button class="filter-tag w-full" 
                                     data-special="bookmarked"
                                     id="bookmarkedFilter">
                                 <i class="fas fa-bookmark"></i>
@@ -1113,7 +1119,11 @@ $show_page_title = true;
         // Filter resources based on current filters
         function filterResources() {
             filteredResources = allResources.filter(resource => {
-                // Special filters (bookmarked or my uploads)
+                // Special filters (question bank, bookmarked, or my uploads)
+                if (currentFilters.special === 'questionbank' && resource.source_type !== 'questionbank') {
+                    return false;
+                }
+                
                 if (currentFilters.special === 'bookmarked' && !resource.user_bookmarked) {
                     return false;
                 }
@@ -1132,14 +1142,29 @@ $show_page_title = true;
                     return false;
                 }
                 
-                // Search filter
+                // Search filter - Enhanced with abbreviation support
                 if (currentFilters.search) {
-                    const searchLower = currentFilters.search.toLowerCase();
+                    const searchLower = currentFilters.search.toLowerCase().trim();
                     const matchesTitle = resource.title.toLowerCase().includes(searchLower);
                     const matchesDescription = resource.description?.toLowerCase().includes(searchLower);
                     const matchesCourse = resource.course_code?.toLowerCase().includes(searchLower);
+                    const matchesCourseName = resource.course_name?.toLowerCase().includes(searchLower);
                     
-                    if (!matchesTitle && !matchesDescription && !matchesCourse) {
+                    // Check for course name abbreviations
+                    // Example: "dbms" should match "Database Management Systems"
+                    let matchesAbbreviation = false;
+                    if (resource.course_name) {
+                        matchesAbbreviation = matchesCourseAbbreviation(searchLower, resource.course_name);
+                    }
+                    
+                    // Check exam type (midterm, final)
+                    const matchesExamType = resource.exam_type?.toLowerCase().includes(searchLower);
+                    
+                    // Check trimester
+                    const matchesTrimester = resource.trimester?.includes(searchLower);
+                    
+                    if (!matchesTitle && !matchesDescription && !matchesCourse && 
+                        !matchesCourseName && !matchesAbbreviation && !matchesExamType && !matchesTrimester) {
                         return false;
                     }
                 }
@@ -1155,6 +1180,52 @@ $show_page_title = true;
             
             // Render
             renderResources();
+        }
+        
+        /**
+         * Check if search term matches course name abbreviation
+         * Examples:
+         * - "dbms" matches "Database Management Systems"
+         * - "oop" matches "Object Oriented Programming"
+         * - "ds" matches "Data Structures"
+         * - "ai" matches "Artificial Intelligence"
+         */
+        function matchesCourseAbbreviation(searchTerm, courseName) {
+            if (!searchTerm || !courseName) return false;
+            
+            // Clean search term
+            searchTerm = searchTerm.toLowerCase().replace(/[^a-z]/g, '');
+            if (searchTerm.length === 0) return false;
+            
+            // Extract words from course name (ignore common words)
+            const ignoreWords = ['the', 'and', 'of', 'for', 'to', 'in', 'with', 'a', 'an'];
+            const words = courseName.toLowerCase()
+                .split(/[\s\-]+/)
+                .filter(word => word.length > 0 && !ignoreWords.includes(word));
+            
+            // Create abbreviation from first letters
+            const abbreviation = words.map(word => word[0]).join('');
+            
+            // Check if search term matches abbreviation
+            if (abbreviation.includes(searchTerm)) {
+                return true;
+            }
+            
+            // Also check if search term matches any combination of initials
+            // For example: "ds" should match "Data Structures" (d + s)
+            if (searchTerm.length <= words.length) {
+                for (let i = 0; i <= words.length - searchTerm.length; i++) {
+                    let combo = '';
+                    for (let j = 0; j < searchTerm.length; j++) {
+                        combo += words[i + j][0];
+                    }
+                    if (combo === searchTerm) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
         }
         
         // Sort resources
@@ -1301,7 +1372,7 @@ $show_page_title = true;
             
             if (isPDF) {
                 console.log('Setting PDF viewer for:', resource.title);
-                card.onclick = () => viewResource(resource.resource_id);
+                card.onclick = () => viewResource(resource.resource_id, resource.file_path);
             } else {
                 console.log('Setting modal for:', resource.title);
                 card.onclick = () => openResourceModal(resource.resource_id);
@@ -1380,7 +1451,7 @@ $show_page_title = true;
             );
             
             if (isPDF) {
-                item.onclick = () => viewResource(resource.resource_id);
+                item.onclick = () => viewResource(resource.resource_id, resource.file_path);
             } else {
                 item.onclick = () => openResourceModal(resource.resource_id);
             }
@@ -1533,7 +1604,7 @@ $show_page_title = true;
                         </button>
                         ${resource.resource_type === 'file' ? `
                             ${(resource.file_type === 'application/pdf' || (resource.file_path && resource.file_path.toLowerCase().endsWith('.pdf'))) ? `
-                                <button onclick="viewResource(${resource.resource_id})" 
+                                <button onclick="viewResource('${resource.resource_id}', '${resource.file_path}')" 
                                         class="action-btn text-center">
                                     <i class="fas fa-eye"></i>
                                     View PDF
@@ -1987,8 +2058,14 @@ $show_page_title = true;
         }
         
         // View resource in dedicated viewer
-        function viewResource(resourceId) {
-            window.location.href = `viewer.php?id=${resourceId}`;
+        function viewResource(resourceId, sourcePath = null) {
+            if (resourceId.startsWith('qb_')) {
+                // Question bank resource
+                window.location.href = `viewer.php?id=${encodeURIComponent(resourceId)}&source=questionbank&path=${encodeURIComponent(sourcePath)}`;
+            } else {
+                // Uploaded resource
+                window.location.href = `viewer.php?id=${resourceId}&source=uploaded`;
+            }
         }
         
         // Upload Modal Functions

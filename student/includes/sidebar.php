@@ -16,7 +16,7 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
             <i class="fas fa-book"></i>
             <span>My Courses</span>
         </a>
-        <a href="#" class="nav-item <?php echo $current_page == 'assignments' ? 'active' : ''; ?>">
+        <a href="assignments.php" class="nav-item <?php echo $current_page == 'assignments' ? 'active' : ''; ?>">
             <i class="fas fa-clipboard-list"></i>
             <span>Assignments</span>
         </a>

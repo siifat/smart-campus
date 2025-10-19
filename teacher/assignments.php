@@ -944,6 +944,16 @@ $page_icon = 'fas fa-clipboard-list';
                     <p class="text-xs text-gray-500 mt-1">Supported: PDF, DOC, DOCX, TXT, ZIP, RAR (Max 10MB)</p>
                 </div>
 
+                <!-- Info Alert -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+                        <div class="text-sm text-blue-700 dark:text-blue-300">
+                            <strong>Important:</strong> Only <strong>published</strong> assignments are visible to students. Unpublished assignments remain as drafts.
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Checkboxes -->
                 <div class="flex items-center gap-6">
                     <label class="flex items-center gap-3 cursor-pointer">
@@ -1008,6 +1018,8 @@ $page_icon = 'fas fa-clipboard-list';
             document.getElementById('modalTitle').textContent = 'Create New Assignment';
             document.getElementById('assignmentForm').reset();
             document.getElementById('assignment_id').value = '';
+            // Check "Publish Immediately" by default for new assignments
+            document.getElementById('is_published').checked = true;
             document.getElementById('assignmentModal').style.display = 'flex';
         }
 
@@ -1032,12 +1044,18 @@ $page_icon = 'fas fa-clipboard-list';
                 const result = await response.json();
                 
                 if (result.success) {
+                    // Close modal first
+                    closeModal();
+                    
+                    // Show success message
                     await Swal.fire({
                         icon: 'success',
                         title: assignmentId ? 'Assignment Updated!' : 'Assignment Created!',
                         text: result.message,
                         confirmButtonColor: '#7c3aed'
                     });
+                    
+                    // Reload page
                     location.reload();
                 } else {
                     Swal.fire({

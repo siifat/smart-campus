@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 19, 2025 at 07:58 PM
+-- Generation Time: Oct 19, 2025 at 08:31 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -500,6 +500,13 @@ CREATE TABLE `assignments` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `assignments`
+--
+
+INSERT INTO `assignments` (`assignment_id`, `course_id`, `teacher_id`, `trimester_id`, `section`, `title`, `description`, `assignment_type`, `total_marks`, `weight_percentage`, `file_path`, `due_date`, `late_submission_allowed`, `late_penalty_per_day`, `is_published`, `is_bonus`, `created_at`, `updated_at`) VALUES
+(1, 32, 3, 1, 'C', 'Assignment 1 by test', 'asdasdasfsdfsa', 'homework', 20.00, NULL, 'uploads/assignments/assignment_1760897953_9622.pdf', '2025-10-22 00:18:00', 1, 5.00, 0, 0, '2025-10-19 18:19:13', '2025-10-19 18:19:13');
 
 -- --------------------------------------------------------
 
@@ -3401,7 +3408,7 @@ ALTER TABLE `announcement_reads`
 -- AUTO_INCREMENT for table `assignments`
 --
 ALTER TABLE `assignments`
-  MODIFY `assignment_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `assignment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `assignment_analytics`

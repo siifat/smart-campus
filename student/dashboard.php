@@ -65,8 +65,88 @@ $stmt->execute();
 $enrolled_courses = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
-// Fetch assignments count (mock data for now - can be replaced with actual assignments table)
-$assignments_count = 8;
+// Get current trimester
+$current_trimester = $conn->query("SELECT * FROM trimesters WHERE is_current = 1 LIMIT 1")->fetch_assoc();
+$current_trimester_id = $current_trimester['trimester_id'] ?? 1;
+
+// Fetch pending assignments count (not submitted yet)
+$stmt = $conn->prepare("
+    SELECT COUNT(DISTINCT a.assignment_id) as count
+    FROM assignments a
+    JOIN enrollments e ON a.course_id = e.course_id 
+        AND a.trimester_id = e.trimester_id
+        AND (a.section IS NULL OR a.section = e.section)
+    LEFT JOIN assignment_submissions sub ON a.assignment_id = sub.assignment_id 
+        AND sub.student_id = ?
+    WHERE e.student_id = ?
+        AND e.status = 'enrolled'
+        AND a.is_published = 1
+        AND sub.submission_id IS NULL
+        AND a.due_date >= NOW()
+");
+$stmt->bind_param('ss', $student_id, $student_id);
+$stmt->execute();
+$assignments_count = $stmt->get_result()->fetch_assoc()['count'];
+$stmt->close();
+
+// Fetch total and submitted assignments for progress calculation
+$stmt = $conn->prepare("
+    SELECT 
+        COUNT(DISTINCT a.assignment_id) as total_assignments,
+        SUM(CASE WHEN sub.submission_id IS NOT NULL THEN 1 ELSE 0 END) as submitted_count
+    FROM assignments a
+    JOIN enrollments e ON a.course_id = e.course_id 
+        AND a.trimester_id = e.trimester_id
+        AND (a.section IS NULL OR a.section = e.section)
+    LEFT JOIN assignment_submissions sub ON a.assignment_id = sub.assignment_id 
+        AND sub.student_id = ?
+    WHERE e.student_id = ?
+        AND e.status = 'enrolled'
+        AND a.is_published = 1
+");
+$stmt->bind_param('ss', $student_id, $student_id);
+$stmt->execute();
+$assignment_stats = $stmt->get_result()->fetch_assoc();
+$total_assignments = $assignment_stats['total_assignments'] ?? 0;
+$submitted_count = $assignment_stats['submitted_count'] ?? 0;
+$assignment_progress = $total_assignments > 0 ? ($submitted_count / $total_assignments) * 100 : 0;
+$stmt->close();
+
+// Fetch upcoming assignments (next 5 pending assignments ordered by due date)
+$stmt = $conn->prepare("
+    SELECT 
+        a.assignment_id,
+        a.title,
+        a.due_date,
+        a.total_marks,
+        a.assignment_type,
+        c.course_code,
+        c.course_name,
+        DATEDIFF(a.due_date, NOW()) as days_remaining,
+        CASE 
+            WHEN DATEDIFF(a.due_date, NOW()) <= 1 THEN 'urgent'
+            WHEN DATEDIFF(a.due_date, NOW()) <= 3 THEN 'soon'
+            ELSE 'upcoming'
+        END as urgency_level
+    FROM assignments a
+    JOIN courses c ON a.course_id = c.course_id
+    JOIN enrollments e ON a.course_id = e.course_id 
+        AND a.trimester_id = e.trimester_id
+        AND (a.section IS NULL OR a.section = e.section)
+    LEFT JOIN assignment_submissions sub ON a.assignment_id = sub.assignment_id 
+        AND sub.student_id = ?
+    WHERE e.student_id = ?
+        AND e.status = 'enrolled'
+        AND a.is_published = 1
+        AND sub.submission_id IS NULL
+        AND a.due_date >= NOW()
+    ORDER BY a.due_date ASC
+    LIMIT 5
+");
+$stmt->bind_param('ss', $student_id, $student_id);
+$stmt->execute();
+$upcoming_assignments = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt->close();
 
 // Fetch earned points from student record
 $points_earned = $student['total_points'] ?? 0;
@@ -695,6 +775,30 @@ $current_gpa = $student['current_cgpa'] ?? 0.00;
             font-size: 28px;
         }
         
+        /* Button Styles */
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #f68b1f, #fbbf24);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(246, 139, 31, 0.3);
+        }
+        
         /* Responsive */
         @media (max-width: 1024px) {
             .sidebar {
@@ -800,9 +904,14 @@ $current_gpa = $student['current_cgpa'] ?? 0.00;
                 </div>
                 <div class="stat-value"><?php echo $assignments_count; ?></div>
                 <div class="stat-label">Pending Assignments</div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: 60%; background: linear-gradient(90deg, #f59e0b, #fbbf24);"></div>
-                </div>
+                <?php if ($total_assignments > 0): ?>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: <?php echo round($assignment_progress); ?>%; background: linear-gradient(90deg, #f59e0b, #fbbf24);"></div>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-top: 8px; text-align: center;">
+                        <?php echo $submitted_count; ?> of <?php echo $total_assignments; ?> submitted
+                    </div>
+                <?php endif; ?>
             </div>
             
             <!-- Points Earned -->
@@ -842,68 +951,61 @@ $current_gpa = $student['current_cgpa'] ?? 0.00;
                             <i class="fas fa-clipboard-list" style="color: #f68b1f; margin-right: 8px;"></i>
                             Upcoming Assignments
                         </h2>
-                        <a href="#" style="color: #f68b1f; font-weight: 600; font-size: 14px;">View All →</a>
+                        <a href="assignments.php" style="color: #f68b1f; font-weight: 600; font-size: 14px;">View All →</a>
                     </div>
                     
-                    <div class="assignment-card">
-                        <div class="assignment-header">
-                            <div>
-                                <div class="assignment-title">Data Structure Implementation Project</div>
-                                <div class="assignment-course">CSE 2103 - Data Structures</div>
+                    <?php if (count($upcoming_assignments) > 0): ?>
+                        <?php foreach ($upcoming_assignments as $assignment): ?>
+                            <div class="assignment-card">
+                                <div class="assignment-header">
+                                    <div>
+                                        <div class="assignment-title"><?= htmlspecialchars($assignment['title']) ?></div>
+                                        <div class="assignment-course"><?= htmlspecialchars($assignment['course_code']) ?> - <?= htmlspecialchars($assignment['course_name']) ?></div>
+                                    </div>
+                                    <?php
+                                    $days = $assignment['days_remaining'];
+                                    $urgency = $assignment['urgency_level'];
+                                    if ($days == 0) {
+                                        $badge_class = 'badge-urgent';
+                                        $badge_text = 'Due Today';
+                                    } elseif ($days == 1) {
+                                        $badge_class = 'badge-urgent';
+                                        $badge_text = 'Due Tomorrow';
+                                    } elseif ($days <= 3) {
+                                        $badge_class = 'badge-soon';
+                                        $badge_text = $days . ' Days Left';
+                                    } elseif ($days <= 7) {
+                                        $badge_class = 'badge-upcoming';
+                                        $badge_text = '1 Week';
+                                    } else {
+                                        $badge_class = 'badge-upcoming';
+                                        $badge_text = ceil($days / 7) . ' Weeks';
+                                    }
+                                    ?>
+                                    <span class="badge <?= $badge_class ?>">
+                                        <i class="fas fa-clock"></i> <?= $badge_text ?>
+                                    </span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+                                    <div style="font-size: 13px; color: var(--text-secondary);">
+                                        <i class="fas fa-star" style="color: #f68b1f;"></i> <?= $assignment['total_marks'] ?> marks
+                                        <span style="margin-left: 12px;">
+                                            <i class="fas fa-tag" style="color: #3b82f6;"></i> <?= ucfirst($assignment['assignment_type']) ?>
+                                        </span>
+                                    </div>
+                                    <a href="assignment_detail.php?id=<?= $assignment['assignment_id'] ?>" class="btn btn-primary" style="padding: 6px 16px; font-size: 13px;">
+                                        View Details
+                                    </a>
+                                </div>
                             </div>
-                            <span class="badge badge-urgent">
-                                <i class="fas fa-clock"></i> Due Tomorrow
-                            </span>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+                            <i class="fas fa-check-circle" style="font-size: 48px; color: #10b981; margin-bottom: 16px;"></i>
+                            <p style="font-size: 16px; font-weight: 600;">All caught up!</p>
+                            <p style="font-size: 14px; margin-top: 8px;">You have no pending assignments at the moment.</p>
                         </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 45%; background: linear-gradient(90deg, #ef4444, #dc2626);"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="assignment-card">
-                        <div class="assignment-header">
-                            <div>
-                                <div class="assignment-title">Database Design & ER Diagram</div>
-                                <div class="assignment-course">CSE 3521 - Database Management</div>
-                            </div>
-                            <span class="badge badge-soon">
-                                <i class="fas fa-clock"></i> 3 Days Left
-                            </span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 70%;"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="assignment-card">
-                        <div class="assignment-header">
-                            <div>
-                                <div class="assignment-title">React Component Development</div>
-                                <div class="assignment-course">CSE 4589 - Web Engineering</div>
-                            </div>
-                            <span class="badge badge-upcoming">
-                                <i class="fas fa-clock"></i> 1 Week
-                            </span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 30%;"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="assignment-card">
-                        <div class="assignment-header">
-                            <div>
-                                <div class="assignment-title">Machine Learning Model Training</div>
-                                <div class="assignment-course">CSE 4533 - Artificial Intelligence</div>
-                            </div>
-                            <span class="badge badge-upcoming">
-                                <i class="fas fa-clock"></i> 2 Weeks
-                            </span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 15%;"></div>
-                        </div>
-                    </div>
+                    <?php endif; ?>
                 </div>
                 
                 <!-- Enrolled Courses -->

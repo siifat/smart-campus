@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 19, 2025 at 08:31 PM
+-- Generation Time: Oct 19, 2025 at 10:01 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -506,7 +506,7 @@ CREATE TABLE `assignments` (
 --
 
 INSERT INTO `assignments` (`assignment_id`, `course_id`, `teacher_id`, `trimester_id`, `section`, `title`, `description`, `assignment_type`, `total_marks`, `weight_percentage`, `file_path`, `due_date`, `late_submission_allowed`, `late_penalty_per_day`, `is_published`, `is_bonus`, `created_at`, `updated_at`) VALUES
-(1, 32, 3, 1, 'C', 'Assignment 1 by test', 'asdasdasfsdfsa', 'homework', 20.00, NULL, 'uploads/assignments/assignment_1760897953_9622.pdf', '2025-10-22 00:18:00', 1, 5.00, 0, 0, '2025-10-19 18:19:13', '2025-10-19 18:19:13');
+(2, 25, 3, 1, NULL, 'dsfsdfsdf', 'sdfsdfsd', 'homework', 100.00, NULL, 'uploads/assignments/assignment_1760900015_8823.pdf', '2025-10-22 00:53:00', 1, 5.00, 1, 0, '2025-10-19 18:53:35', '2025-10-19 19:03:11');
 
 -- --------------------------------------------------------
 
@@ -549,9 +549,19 @@ CREATE TABLE `assignment_submissions` (
   `is_late` tinyint(1) DEFAULT 0,
   `late_days` int(11) DEFAULT 0,
   `status` enum('submitted','graded','returned','resubmitted') DEFAULT 'submitted',
+  `marks_obtained` decimal(5,2) DEFAULT NULL COMMENT 'Marks awarded by teacher',
+  `feedback` text DEFAULT NULL COMMENT 'Teacher feedback on submission',
+  `graded_at` timestamp NULL DEFAULT NULL COMMENT 'When the submission was graded',
   `attempt_number` int(11) DEFAULT 1,
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `assignment_submissions`
+--
+
+INSERT INTO `assignment_submissions` (`submission_id`, `assignment_id`, `student_id`, `enrollment_id`, `file_path`, `file_size`, `file_type`, `submission_text`, `submitted_at`, `is_late`, `late_days`, `status`, `marks_obtained`, `feedback`, `graded_at`, `attempt_number`, `updated_at`) VALUES
+(1, 2, '0112320240', 34, 'uploads/submissions/submission_0112320240_2_1760902816.pdf', 2137263, 'application/pdf', '0', '2025-10-19 19:40:16', 0, 0, 'graded', 99.00, '', '2025-10-19 19:40:40', 1, '2025-10-19 19:40:40');
 
 --
 -- Triggers `assignment_submissions`
@@ -727,6 +737,42 @@ CREATE TABLE `content_modules` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `course_materials`
+--
+
+CREATE TABLE `course_materials` (
+  `content_id` int(11) NOT NULL,
+  `course_id` int(11) NOT NULL,
+  `teacher_id` int(11) NOT NULL,
+  `trimester_id` int(11) NOT NULL,
+  `section` varchar(10) DEFAULT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `content_type` enum('pdf','document','video','link','code','other') NOT NULL,
+  `file_path` varchar(500) DEFAULT NULL,
+  `external_url` varchar(500) DEFAULT NULL,
+  `content_text` longtext DEFAULT NULL,
+  `file_size` bigint(20) DEFAULT NULL,
+  `mime_type` varchar(100) DEFAULT NULL,
+  `is_published` tinyint(1) DEFAULT 1,
+  `view_count` int(11) DEFAULT 0,
+  `download_count` int(11) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  KEY `idx_course_section` (`course_id`,`section`),
+  KEY `idx_teacher` (`teacher_id`),
+  KEY `idx_published` (`is_published`),
+  KEY `course_id` (`course_id`),
+  KEY `teacher_id` (`teacher_id`),
+  KEY `trimester_id` (`trimester_id`),
+  CONSTRAINT `course_materials_ibfk_1` FOREIGN KEY (`course_id`) REFERENCES `courses` (`course_id`) ON DELETE CASCADE,
+  CONSTRAINT `course_materials_ibfk_2` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`teacher_id`) ON DELETE CASCADE,
+  CONSTRAINT `course_materials_ibfk_3` FOREIGN KEY (`trimester_id`) REFERENCES `trimesters` (`trimester_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `courses`
 --
 
@@ -858,6 +904,33 @@ CREATE TABLE `course_contents` (
   `view_count` int(11) DEFAULT 0,
   `download_count` int(11) DEFAULT 0,
   `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `course_materials`
+--
+
+CREATE TABLE `course_materials` (
+  `content_id` int(11) NOT NULL,
+  `course_id` int(11) NOT NULL,
+  `teacher_id` int(11) NOT NULL,
+  `trimester_id` int(11) NOT NULL,
+  `section` varchar(10) DEFAULT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `content_type` enum('pdf','document','video','link','code','other') NOT NULL,
+  `file_path` varchar(500) DEFAULT NULL,
+  `external_url` varchar(500) DEFAULT NULL,
+  `content_text` longtext DEFAULT NULL,
+  `file_size` bigint(20) DEFAULT NULL,
+  `mime_type` varchar(100) DEFAULT NULL,
+  `is_published` tinyint(1) DEFAULT 1,
+  `view_count` int(11) DEFAULT 0,
+  `download_count` int(11) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -2319,7 +2392,7 @@ CREATE TABLE `students` (
 --
 
 INSERT INTO `students` (`student_id`, `password_hash`, `full_name`, `email`, `phone`, `date_of_birth`, `blood_group`, `father_name`, `mother_name`, `program_id`, `current_trimester_number`, `total_completed_credits`, `current_cgpa`, `total_points`, `profile_picture`, `admission_date`, `status`, `created_at`, `updated_at`, `focus_streak`) VALUES
-('0112320240', '$2y$10$xzeO35iY.jE08O8YRqA.xuvAqwA3gKbBPwscf5JJlT15cIoWtyJVS', 'Sifatullah', NULL, '+8801608962341', '2004-08-22', 'A+', 'Mohammad Abdus Salam', 'Shoheli Parvin Nazma', 1, 1, 65, 4.00, 50, '9cf6a546-c5d4-42b1-8c18-6e9cccd167ca.jpg', NULL, 'active', '2025-10-19 14:08:05', '2025-10-19 16:02:02', 0);
+('0112320240', '$2y$10$xzeO35iY.jE08O8YRqA.xuvAqwA3gKbBPwscf5JJlT15cIoWtyJVS', 'Sifatullah', NULL, '+8801608962341', '2004-08-22', 'A+', 'Mohammad Abdus Salam', 'Shoheli Parvin Nazma', 1, 1, 65, 4.00, 60, '9cf6a546-c5d4-42b1-8c18-6e9cccd167ca.jpg', NULL, 'active', '2025-10-19 14:08:05', '2025-10-19 19:40:16', 0);
 
 -- --------------------------------------------------------
 
@@ -2362,7 +2435,8 @@ INSERT INTO `student_activities` (`activity_id`, `student_id`, `activity_type`, 
 (53, '0112320240', 'other', 'Added new task', 'Integrate Teacher part', NULL, NULL, 'fa-plus-circle', '2025-10-19 14:18:17'),
 (54, '0112320240', 'todo_complete', 'Completed task', 'Integrate Teacher part', NULL, 4, 'fa-check-circle', '2025-10-19 14:18:18'),
 (55, '0112320240', 'note_upload', 'Uploaded Resource', 'Uploaded: abc', 33, 12, 'fa-upload', '2025-10-19 16:02:02'),
-(56, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-19 17:21:06');
+(56, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-19 17:21:06'),
+(57, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-19 18:52:10');
 
 -- --------------------------------------------------------
 
@@ -2427,6 +2501,14 @@ CREATE TABLE `student_notifications` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `read_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `student_notifications`
+--
+
+INSERT INTO `student_notifications` (`notification_id`, `student_id`, `notification_type`, `title`, `message`, `link`, `is_read`, `priority`, `created_at`, `read_at`) VALUES
+(1, '0112320240', 'assignment', 'New Assignment Posted', 'New assignment \"dsfsdfsdf\" has been posted for CSE 3522', '/student/assignment_detail.php?id=2', 0, 'normal', '2025-10-19 19:03:11', NULL),
+(2, '0112320240', 'grade', 'Assignment Graded', 'Your submission for \"dsfsdfsdf\" has been graded. Score: 99/100.00', '/student/assignment_detail.php?id=2', 0, 'normal', '2025-10-19 19:40:40', NULL);
 
 -- --------------------------------------------------------
 
@@ -2640,6 +2722,13 @@ CREATE TABLE `teacher_notifications` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `read_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `teacher_notifications`
+--
+
+INSERT INTO `teacher_notifications` (`notification_id`, `teacher_id`, `notification_type`, `title`, `message`, `related_type`, `related_id`, `action_url`, `is_read`, `priority`, `created_at`, `read_at`) VALUES
+(1, 3, 'new_submission', 'New Submission Received', 'Student 0112320240 submitted \"dsfsdfsdf\" on time', 'submission', 1, NULL, 0, 'normal', '2025-10-19 19:40:16', NULL);
 
 -- --------------------------------------------------------
 
@@ -3050,6 +3139,16 @@ ALTER TABLE `course_contents`
   ADD KEY `idx_content_type` (`content_type`);
 
 --
+-- Indexes for table `course_materials`
+--
+ALTER TABLE `course_materials`
+  ADD PRIMARY KEY (`content_id`),
+  ADD KEY `trimester_id` (`trimester_id`),
+  ADD KEY `idx_course_section` (`course_id`,`section`),
+  ADD KEY `idx_teacher` (`teacher_id`),
+  ADD KEY `idx_published` (`is_published`);
+
+--
 -- Indexes for table `departments`
 --
 ALTER TABLE `departments`
@@ -3408,7 +3507,7 @@ ALTER TABLE `announcement_reads`
 -- AUTO_INCREMENT for table `assignments`
 --
 ALTER TABLE `assignments`
-  MODIFY `assignment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `assignment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `assignment_analytics`
@@ -3420,7 +3519,7 @@ ALTER TABLE `assignment_analytics`
 -- AUTO_INCREMENT for table `assignment_submissions`
 --
 ALTER TABLE `assignment_submissions`
-  MODIFY `submission_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `submission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `attendance`
@@ -3462,6 +3561,12 @@ ALTER TABLE `courses`
 -- AUTO_INCREMENT for table `course_contents`
 --
 ALTER TABLE `course_contents`
+  MODIFY `content_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `course_materials`
+--
+ALTER TABLE `course_materials`
   MODIFY `content_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -3582,7 +3687,7 @@ ALTER TABLE `student_achievements`
 -- AUTO_INCREMENT for table `student_activities`
 --
 ALTER TABLE `student_activities`
-  MODIFY `activity_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
+  MODIFY `activity_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
 
 --
 -- AUTO_INCREMENT for table `student_advisors`
@@ -3600,7 +3705,7 @@ ALTER TABLE `student_billing`
 -- AUTO_INCREMENT for table `student_notifications`
 --
 ALTER TABLE `student_notifications`
-  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `student_points`
@@ -3642,7 +3747,7 @@ ALTER TABLE `teacher_announcements`
 -- AUTO_INCREMENT for table `teacher_notifications`
 --
 ALTER TABLE `teacher_notifications`
-  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `teacher_sessions`
@@ -3758,6 +3863,14 @@ ALTER TABLE `courses`
 --
 ALTER TABLE `course_contents`
   ADD CONSTRAINT `fk_content_module` FOREIGN KEY (`module_id`) REFERENCES `content_modules` (`module_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `course_materials`
+--
+ALTER TABLE `course_materials`
+  ADD CONSTRAINT `course_materials_ibfk_1` FOREIGN KEY (`course_id`) REFERENCES `courses` (`course_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `course_materials_ibfk_2` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`teacher_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `course_materials_ibfk_3` FOREIGN KEY (`trimester_id`) REFERENCES `trimesters` (`trimester_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `enrollments`

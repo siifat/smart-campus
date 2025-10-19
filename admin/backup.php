@@ -13,31 +13,72 @@ require_once('../config/database.php');
 $message = '';
 $message_type = '';
 
+// Show success message after delete redirect
+if (isset($_SESSION['backup_message'])) {
+    $message = $_SESSION['backup_message'];
+    $message_type = $_SESSION['backup_message_type'];
+    unset($_SESSION['backup_message']);
+    unset($_SESSION['backup_message_type']);
+}
+
+// Handle Delete Backup
+if (isset($_GET['delete']) && !empty($_GET['delete'])) {
+    $filename = basename($_GET['delete']); // Sanitize filename
+    $filepath = __DIR__ . '/../backups/' . $filename;
+    
+    if (file_exists($filepath) && pathinfo($filename, PATHINFO_EXTENSION) === 'sql') {
+        if (unlink($filepath)) {
+            $_SESSION['backup_message'] = "✅ Backup deleted successfully: <strong>$filename</strong>";
+            $_SESSION['backup_message_type'] = 'success';
+        } else {
+            $_SESSION['backup_message'] = "❌ Error deleting backup file.";
+            $_SESSION['backup_message_type'] = 'error';
+        }
+    } else {
+        $_SESSION['backup_message'] = "❌ Backup file not found.";
+        $_SESSION['backup_message_type'] = 'error';
+    }
+    
+    // Redirect to remove the delete parameter
+    header("Location: backup.php");
+    exit;
+}
+
 // Handle Backup
 if (isset($_POST['create_backup'])) {
-    $backup_dir = '../backups/';
+    $backup_dir = __DIR__ . '/../backups/';
     if (!file_exists($backup_dir)) {
         mkdir($backup_dir, 0777, true);
     }
     
-    $filename = 'backup_' . date('Y-m-d_H-i-s') . '.sql';
+    // Get custom name or use default
+    $custom_name = !empty($_POST['backup_name']) ? preg_replace('/[^a-zA-Z0-9_-]/', '_', $_POST['backup_name']) : '';
+    $timestamp = date('Y-m-d_H-i-s');
+    $filename = $custom_name ? $custom_name . '_' . $timestamp . '.sql' : 'backup_' . $timestamp . '.sql';
     $filepath = $backup_dir . $filename;
     
-    // Get database credentials from config
+    // Get database credentials
     $host = 'localhost';
     $username = 'root';
     $password = '';
     $database = 'uiu_smart_campus';
     
-    $command = "mysqldump --host=$host --user=$username --password=$password $database > $filepath";
+    // Use mysqldump with proper error handling
+    $command = "mysqldump --host=$host --user=$username";
+    if (!empty($password)) {
+        $command .= " --password=$password";
+    }
+    $command .= " $database > \"$filepath\" 2>&1";
     
     exec($command, $output, $return_var);
     
-    if ($return_var === 0) {
-        $message = "✅ Backup created successfully: $filename";
+    if ($return_var === 0 && file_exists($filepath) && filesize($filepath) > 0) {
+        $size = number_format(filesize($filepath) / 1024 / 1024, 2);
+        $message = "✅ Backup created successfully: <strong>$filename</strong> ($size MB)";
         $message_type = 'success';
     } else {
-        $message = "❌ Error creating backup";
+        $error_output = implode("\n", $output);
+        $message = "❌ Error creating backup. " . (file_exists($filepath) ? "File created but may be empty." : "File not created.") . " Output: " . htmlspecialchars($error_output);
         $message_type = 'error';
     }
 }
@@ -49,27 +90,43 @@ if (isset($_POST['restore_backup']) && isset($_FILES['backup_file'])) {
     if ($file['error'] === UPLOAD_ERR_OK) {
         $temp_path = $file['tmp_name'];
         
-        $host = 'localhost';
-        $username = 'root';
-        $password = '';
-        $database = 'uiu_smart_campus';
-        
-        $command = "mysql --host=$host --user=$username --password=$password $database < $temp_path";
-        
-        exec($command, $output, $return_var);
-        
-        if ($return_var === 0) {
-            $message = "✅ Database restored successfully!";
-            $message_type = 'success';
-        } else {
-            $message = "❌ Error restoring database";
+        // Verify it's a valid SQL file
+        $file_content = file_get_contents($temp_path, false, null, 0, 1000);
+        if (strpos($file_content, 'CREATE TABLE') === false && strpos($file_content, 'INSERT INTO') === false) {
+            $message = "❌ Invalid backup file. File doesn't appear to be a valid SQL backup.";
             $message_type = 'error';
+        } else {
+            $host = 'localhost';
+            $username = 'root';
+            $password = '';
+            $database = 'uiu_smart_campus';
+            
+            // Use mysql command with proper error handling
+            $command = "mysql --host=$host --user=$username";
+            if (!empty($password)) {
+                $command .= " --password=$password";
+            }
+            $command .= " $database < \"$temp_path\" 2>&1";
+            
+            exec($command, $output, $return_var);
+            
+            if ($return_var === 0) {
+                $message = "✅ Database restored successfully! All data has been replaced with the backup.";
+                $message_type = 'success';
+            } else {
+                $error_output = implode("\n", $output);
+                $message = "❌ Error restoring database. Output: " . htmlspecialchars($error_output);
+                $message_type = 'error';
+            }
         }
+    } else {
+        $message = "❌ Error uploading file. Error code: " . $file['error'];
+        $message_type = 'error';
     }
 }
 
 // Get existing backups
-$backup_dir = '../backups/';
+$backup_dir = __DIR__ . '/../backups/';
 $backups = [];
 if (file_exists($backup_dir)) {
     $files = scandir($backup_dir, SCANDIR_SORT_DESCENDING);
@@ -171,6 +228,13 @@ while ($row = $result->fetch_array()) {
                     <div style="padding: 30px;">
                         <p style="margin-bottom: 20px;">Create a complete backup of the database. This will include all tables, data, and structure.</p>
                         <form method="POST">
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Backup Name (Optional)</label>
+                                <input type="text" name="backup_name" placeholder="e.g., before_update, weekly_backup" 
+                                       style="width: 100%; padding: 10px; border: 2px solid #e1e4e8; border-radius: 8px; font-size: 14px;"
+                                       pattern="[a-zA-Z0-9_-]*" title="Only letters, numbers, hyphens and underscores allowed">
+                                <small style="color: #6c757d; font-size: 12px;">Leave empty for auto-generated name. Timestamp will be added automatically.</small>
+                            </div>
                             <button type="submit" name="create_backup" class="btn btn-success" style="width: 100%;">
                                 <i class="fas fa-download"></i> Create Backup Now
                             </button>
@@ -229,11 +293,11 @@ while ($row = $result->fetch_array()) {
                                         <td><?php echo number_format($backup['size'] / 1024 / 1024, 2); ?> MB</td>
                                         <td><?php echo date('M d, Y H:i:s', $backup['date']); ?></td>
                                         <td class="text-center">
-                                            <a href="../backups/<?php echo $backup['name']; ?>" download 
-                                               class="btn-action btn-edit" title="Download">
+                                            <a href="api/download_backup.php?file=<?php echo urlencode($backup['name']); ?>" 
+                                               class="btn-action btn-edit" title="Download" style="text-decoration: none;">
                                                 <i class="fas fa-download"></i>
                                             </a>
-                                            <button onclick="deleteBackup('<?php echo $backup['name']; ?>')" 
+                                            <button onclick="deleteBackup('<?php echo htmlspecialchars($backup['name'], ENT_QUOTES); ?>')" 
                                                     class="btn-action btn-delete" title="Delete">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -258,8 +322,8 @@ while ($row = $result->fetch_array()) {
         }
 
         function deleteBackup(filename) {
-            if (confirm('Delete backup: ' + filename + '?')) {
-                window.location.href = 'delete_backup.php?file=' + encodeURIComponent(filename);
+            if (confirm('⚠️ Delete backup: ' + filename + '?\n\nThis action cannot be undone!')) {
+                window.location.href = 'backup.php?delete=' + encodeURIComponent(filename);
             }
         }
     </script>

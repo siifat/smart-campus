@@ -4,6 +4,16 @@
  * Comprehensive analytics dashboard for teachers to track student performance,
  * course statistics, and identify high-performing students
  */
+
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Prevent caching during development
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
 session_start();
 
 // Check if teacher is logged in
@@ -58,6 +68,13 @@ $courses_stmt->close();
 $selected_course_id = isset($_GET['course_id']) ? (int)$_GET['course_id'] : ($courses[0]['course_id'] ?? null);
 $selected_section = isset($_GET['section']) ? $_GET['section'] : ($courses[0]['section'] ?? null);
 
+// DEBUG: Log what we're working with
+if (isset($_GET['debug'])) {
+    error_log("GRADES DEBUG: course_id=" . var_export($selected_course_id, true) . ", section=" . var_export($selected_section, true));
+    error_log("GRADES DEBUG: GET params=" . json_encode($_GET));
+    error_log("GRADES DEBUG: Available courses=" . json_encode($courses));
+}
+
 // Get course details
 $course_details = null;
 if ($selected_course_id) {
@@ -97,7 +114,7 @@ if ($selected_course_id && $selected_section) {
             AND sub.status IN ('graded', 'submitted')
         WHERE a.teacher_id = ? 
             AND a.course_id = ? 
-            AND a.section = ?
+            AND (a.section = ? OR a.section IS NULL)
             AND a.trimester_id = ?
             AND a.is_published = 1
         GROUP BY a.assignment_id
@@ -128,7 +145,7 @@ if ($selected_course_id && $selected_section) {
         FROM students s
         JOIN enrollments e ON s.student_id = e.student_id
         LEFT JOIN assignments a ON e.course_id = a.course_id 
-            AND e.section = a.section 
+            AND (a.section = e.section OR a.section IS NULL)
             AND e.trimester_id = a.trimester_id
             AND a.is_published = 1
         LEFT JOIN assignment_submissions sub ON a.assignment_id = sub.assignment_id 
@@ -163,7 +180,9 @@ if ($selected_course_id) {
             AND e.trimester_id = a.trimester_id
             AND a.teacher_id = ?
             AND a.is_published = 1
+            AND (a.section = e.section OR a.section IS NULL)
         LEFT JOIN assignment_submissions sub ON a.assignment_id = sub.assignment_id
+            AND sub.student_id = e.student_id
         WHERE e.teacher_id = ? 
             AND e.course_id = ? 
             AND e.trimester_id = ?
@@ -188,11 +207,12 @@ if ($selected_course_id) {
             COUNT(DISTINCT CASE WHEN sub.is_late = 1 THEN sub.submission_id END) as late_count
         FROM enrollments e
         LEFT JOIN assignments a ON e.course_id = a.course_id 
-            AND e.section = a.section 
+            AND (a.section = e.section OR a.section IS NULL)
             AND e.trimester_id = a.trimester_id
             AND a.teacher_id = ?
             AND a.is_published = 1
         LEFT JOIN assignment_submissions sub ON a.assignment_id = sub.assignment_id
+            AND sub.student_id = e.student_id
         WHERE e.teacher_id = ? 
             AND e.course_id = ? 
             AND e.trimester_id = ?
@@ -227,6 +247,31 @@ if ($selected_course_id && $selected_section) {
     }
 }
 
+// Prepare chart data as JSON to avoid inline PHP in JavaScript
+$chart_data = [
+    'gradeDistribution' => [
+        'labels' => !empty($grade_distribution) ? array_keys($grade_distribution) : [],
+        'values' => !empty($grade_distribution) ? array_values($grade_distribution) : []
+    ],
+    'assignmentTrend' => [
+        'labels' => array_map(function($a) { 
+            return substr($a['title'], 0, 20) . (strlen($a['title']) > 20 ? '...' : ''); 
+        }, $assignments_stats),
+        'avgMarks' => array_map(function($a) { return round($a['avg_marks'] ?? 0, 1); }, $assignments_stats)
+    ],
+    'assignmentStats' => [
+        'labels' => array_map(function($a) { 
+            return substr($a['title'], 0, 25) . (strlen($a['title']) > 25 ? '...' : ''); 
+        }, $assignments_stats),
+        'submissionRates' => array_map(function($a) use ($course_details) {
+            $total_students = $course_details['total_students'] ?? 1;
+            return $total_students > 0 ? round(($a['submission_count'] / $total_students) * 100, 1) : 0;
+        }, $assignments_stats),
+        'avgMarks' => array_map(function($a) { return round($a['avg_marks'] ?? 0, 1); }, $assignments_stats)
+    ]
+];
+
+// Debug data (comment out in production)
 // Page configuration
 $page_title = 'Grades & Analytics';
 $page_icon = 'fas fa-chart-bar';
@@ -700,7 +745,7 @@ $page_icon = 'fas fa-chart-bar';
                 <label style="display: block; margin-bottom: 12px; font-weight: 700; color: var(--text-primary);">
                     <i class="fas fa-book" style="color: #667eea;"></i> Select Course & Section
                 </label>
-                <select name="course_section" id="courseSection" onchange="this.form.submit()">
+                <select name="course_section" id="courseSection">
                     <option value="">-- Select Course & Section --</option>
                     <?php foreach ($courses as $course): ?>
                         <option value="<?php echo $course['course_id'] . '|' . $course['section']; ?>"
@@ -798,7 +843,15 @@ $page_icon = 'fas fa-chart-bar';
                         <i class="fas fa-download"></i> Download
                     </button>
                 </div>
-                <canvas id="gradeDistChart" height="300"></canvas>
+                <?php if (!empty($grade_distribution)): ?>
+                    <canvas id="gradeDistChart" height="300"></canvas>
+                <?php else: ?>
+                    <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+                        <i class="fas fa-chart-pie" style="font-size: 48px; opacity: 0.3; margin-bottom: 16px;"></i>
+                        <p style="font-size: 16px; font-weight: 600;">No grade data available yet</p>
+                        <p style="font-size: 14px; margin-top: 8px;">Students need to have graded assignments to display grade distribution.</p>
+                    </div>
+                <?php endif; ?>
             </div>
             
             <!-- Section Comparison Chart -->
@@ -826,7 +879,15 @@ $page_icon = 'fas fa-chart-bar';
                         <i class="fas fa-download"></i> Download
                     </button>
                 </div>
-                <canvas id="assignmentTrendChart" height="300"></canvas>
+                <?php if (!empty($assignments_stats)): ?>
+                    <canvas id="assignmentTrendChart" height="300"></canvas>
+                <?php else: ?>
+                    <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+                        <i class="fas fa-chart-line" style="font-size: 48px; opacity: 0.3; margin-bottom: 16px;"></i>
+                        <p style="font-size: 16px; font-weight: 600;">No assignment data available</p>
+                        <p style="font-size: 14px; margin-top: 8px;">Create and publish assignments to track performance trends.</p>
+                    </div>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
         </div>
@@ -844,6 +905,20 @@ $page_icon = 'fas fa-chart-bar';
                 </button>
             </div>
             <canvas id="assignmentStatsChart" height="120"></canvas>
+        </div>
+        <?php else: ?>
+        <div class="chart-container fade-in-up" style="animation-delay: 0.4s;">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <i class="fas fa-tasks"></i>
+                    Assignment Statistics
+                </div>
+            </div>
+            <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+                <i class="fas fa-tasks" style="font-size: 48px; opacity: 0.3; margin-bottom: 16px;"></i>
+                <p style="font-size: 16px; font-weight: 600;">No assignments published yet</p>
+                <p style="font-size: 14px; margin-top: 8px;">Create and publish assignments to view submission statistics.</p>
+            </div>
         </div>
         <?php endif; ?>
         
@@ -943,6 +1018,46 @@ $page_icon = 'fas fa-chart-bar';
         </div>
         <?php endif; ?>
         
+        <!-- No Data Message -->
+        <?php if (empty($student_performance) && empty($assignments_stats) && empty($grade_distribution)): ?>
+        <div class="chart-container fade-in-up" style="animation-delay: 0.5s;">
+            <div style="text-align: center; padding: 80px 20px;">
+                <i class="fas fa-chart-line" style="font-size: 80px; color: var(--border-color); margin-bottom: 24px;"></i>
+                <h3 style="font-size: 24px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px;">
+                    No Analytics Data Available Yet
+                </h3>
+                <p style="color: var(--text-secondary); font-size: 16px; margin-bottom: 32px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                    To view analytics and student performance data, you need to create assignments, have students submit them, and grade the submissions.
+                </p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; max-width: 800px; margin: 0 auto; text-align: left;">
+                    <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px;">
+                        <div style="font-size: 32px; margin-bottom: 12px;">📝</div>
+                        <strong style="display: block; color: var(--text-primary); margin-bottom: 8px;">Step 1: Create Assignments</strong>
+                        <p style="font-size: 14px; color: var(--text-secondary);">Go to Assignments page and create assignments for this course and section.</p>
+                    </div>
+                    <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px;">
+                        <div style="font-size: 32px; margin-bottom: 12px;">📤</div>
+                        <strong style="display: block; color: var(--text-primary); margin-bottom: 8px;">Step 2: Students Submit</strong>
+                        <p style="font-size: 14px; color: var(--text-secondary);">Students will submit their work through the student portal.</p>
+                    </div>
+                    <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px;">
+                        <div style="font-size: 32px; margin-bottom: 12px;">✅</div>
+                        <strong style="display: block; color: var(--text-primary); margin-bottom: 8px;">Step 3: Grade Submissions</strong>
+                        <p style="font-size: 14px; color: var(--text-secondary);">Review and grade student submissions from the Submissions page.</p>
+                    </div>
+                    <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px;">
+                        <div style="font-size: 32px; margin-bottom: 12px;">📊</div>
+                        <strong style="display: block; color: var(--text-primary); margin-bottom: 8px;">Step 4: View Analytics</strong>
+                        <p style="font-size: 14px; color: var(--text-secondary);">Return here to see charts, rankings, and performance trends.</p>
+                    </div>
+                </div>
+                <a href="assignments.php" style="display: inline-block; margin-top: 32px; padding: 14px 28px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; transition: transform 0.2s;">
+                    <i class="fas fa-plus-circle"></i> Create Your First Assignment
+                </a>
+            </div>
+        </div>
+        <?php endif; ?>
+        
         <!-- Assignment-wise Performance -->
         <?php if (!empty($assignments_stats)): ?>
         <div class="chart-container fade-in-up" style="animation-delay: 0.6s;">
@@ -1032,261 +1147,72 @@ $page_icon = 'fas fa-chart-bar';
     </main>
     
     <script>
-        // Parse course_section parameter for form
-        document.addEventListener('DOMContentLoaded', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const courseId = urlParams.get('course_id');
-            const section = urlParams.get('section');
-            
-            if (courseId && section) {
-                const select = document.getElementById('courseSection');
-                const value = courseId + '|' + section;
-                for (let option of select.options) {
-                    if (option.value === value) {
-                        option.selected = true;
-                        break;
-                    }
-                }
-            }
-        });
+        // Handle course selection change (with reload prevention)
+        let isPageLoad = true;
+        const courseSelector = document.getElementById('courseSection');
         
-        // Update form submission to use proper parameters
-        document.getElementById('courseSection').addEventListener('change', function() {
+        // Prevent change event on initial page load
+        setTimeout(() => { isPageLoad = false; }, 500);
+        
+        courseSelector.addEventListener('change', function() {
+            if (isPageLoad) {
+                console.log('Ignoring change event on page load');
+                return;
+            }
+            
             const value = this.value;
+            console.log('Course selection changed:', value);
             if (value) {
                 const [courseId, section] = value.split('|');
-                window.location.href = `?course_id=${courseId}&section=${section}`;
+                console.log('Redirecting to: course_id=' + courseId + ', section=' + section);
+                const newUrl = `?course_id=${courseId}&section=${section}`;
+                console.log('Full URL:', newUrl);
+                window.location.href = newUrl;
+            } else {
+                // If empty option selected, reload without parameters
+                console.log('Reloading page without parameters');
+                window.location.href = window.location.pathname;
             }
         });
-        
-        <?php if ($selected_course_id && $selected_section): ?>
-        
-        // Grade Distribution Chart
-        <?php if (!empty($grade_distribution)): ?>
-        const gradeDistCanvas = document.getElementById('gradeDistChart');
-        if (gradeDistCanvas && !gradeDistCanvas.chart) {
-            const gradeDistCtx = gradeDistCanvas.getContext('2d');
-            gradeDistCanvas.chart = new Chart(gradeDistCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: <?php echo json_encode(array_keys($grade_distribution)); ?>,
-                    datasets: [{
-                        data: <?php echo json_encode(array_values($grade_distribution)); ?>,
-                        backgroundColor: [
-                            '#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', 
-                            '#ef4444', '#06b6d4', '#ec4899', '#84cc16'
-                        ],
-                        borderWidth: 2,
-                        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--card-bg')
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: {
-                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary'),
-                            font: { size: 13, weight: '600' },
-                            padding: 15
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: 12,
-                        titleFont: { size: 14, weight: '700' },
-                        bodyFont: { size: 13 },
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.parsed || 0;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = ((value / total) * 100).toFixed(1);
-                                return `${label}: ${value} students (${percentage}%)`;
-                            }
-                        }
-                    }
-                }
-            });
-        }
-        <?php endif; ?>
-        
-        // Section Comparison Chart
-        <?php if (count($section_comparison) > 1): ?>
-        const sectionCompCanvas = document.getElementById('sectionCompChart');
-        if (sectionCompCanvas && !sectionCompCanvas.chart) {
-            const sectionCompCtx = sectionCompCanvas.getContext('2d');
-            sectionCompCanvas.chart = new Chart(sectionCompCtx, {
-                type: 'bar',
-                data: {
-                    labels: <?php echo json_encode(array_column($section_comparison, 'section')); ?>,
-                    datasets: [
-                        {
-                            label: 'Average Marks',
-                            data: <?php echo json_encode(array_map(function($s) { return round($s['avg_marks'] ?? 0, 1); }, $section_comparison)); ?>,
-                            backgroundColor: 'rgba(102, 126, 234, 0.8)',
-                            borderColor: 'rgba(102, 126, 234, 1)',
-                            borderWidth: 2,
-                            borderRadius: 8
-                        },
-                        {
-                            label: 'Student Count',
-                            data: <?php echo json_encode(array_column($section_comparison, 'student_count')); ?>,
-                            backgroundColor: 'rgba(16, 185, 129, 0.8)',
-                            borderColor: 'rgba(16, 185, 129, 1)',
-                            borderWidth: 2,
-                            borderRadius: 8
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-color') },
-                        ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary') }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary') }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary'),
-                            font: { size: 13, weight: '600' }
-                        }
-                    }
-                }
-            });
-        }
-        <?php else: ?>
-        // Assignment Trend Chart (when only one section)
-        <?php if (!empty($assignments_stats)): ?>
-        const assignmentTrendCanvas = document.getElementById('assignmentTrendChart');
-        if (assignmentTrendCanvas && !assignmentTrendCanvas.chart) {
-            const assignmentTrendCtx = assignmentTrendCanvas.getContext('2d');
-            assignmentTrendCanvas.chart = new Chart(assignmentTrendCtx, {
-                type: 'line',
-                data: {
-                    labels: <?php echo json_encode(array_map(function($a) { 
-                        return substr($a['title'], 0, 20) . (strlen($a['title']) > 20 ? '...' : ''); 
-                    }, $assignments_stats)); ?>,
-                    datasets: [{
-                        label: 'Average Marks',
-                        data: <?php echo json_encode(array_map(function($a) { return round($a['avg_marks'] ?? 0, 1); }, $assignments_stats)); ?>,
-                        borderColor: 'rgba(102, 126, 234, 1)',
-                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                        borderWidth: 3,
-                        tension: 0.4,
-                        fill: true,
-                        pointBackgroundColor: 'rgba(102, 126, 234, 1)',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 6,
-                        pointHoverRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-color') },
-                        ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary') }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { 
-                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary'),
-                            maxRotation: 45,
-                            minRotation: 45
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary'),
-                            font: { size: 13, weight: '600' }
-                        }
-                    }
-                }
-            });
-        }
-        <?php endif; ?>
-        <?php endif; ?>
-        
-        // Assignment Statistics Chart
-        <?php if (!empty($assignments_stats)): ?>
-        const assignmentStatsCanvas = document.getElementById('assignmentStatsChart');
-        if (assignmentStatsCanvas && !assignmentStatsCanvas.chart) {
-            const assignmentStatsCtx = assignmentStatsCanvas.getContext('2d');
-            assignmentStatsCanvas.chart = new Chart(assignmentStatsCtx, {
-                type: 'bar',
-                data: {
-                    labels: <?php echo json_encode(array_map(function($a) { 
-                        return substr($a['title'], 0, 25) . (strlen($a['title']) > 25 ? '...' : ''); 
-                    }, $assignments_stats)); ?>,
-                    datasets: [{
-                        label: 'Submission Rate (%)',
-                        data: <?php echo json_encode(array_map(function($a) use ($course_details) { 
-                            $total = $course_details['total_students'];
-                            return $total > 0 ? round(($a['submission_count'] / $total) * 100, 1) : 0;
-                        }, $assignments_stats)); ?>,
-                        backgroundColor: 'rgba(245, 158, 11, 0.8)',
-                        borderColor: 'rgba(245, 158, 11, 1)',
-                        borderWidth: 2,
-                        borderRadius: 8
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false,
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        max: 100,
-                        grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-color') },
-                        ticks: { 
-                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary'),
-                            callback: function(value) { return value + '%'; }
-                        }
-                    },
-                    y: {
-                        grid: { display: false },
-                        ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary') }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary'),
-                            font: { size: 13, weight: '600' }
-                        }
-                    }
-                }
-            });
-        }
-        <?php endif; ?>
-        
-        <?php endif; ?>
-        
+    </script>
+    
+    <?php if ($selected_course_id && $selected_section): ?>
+    <?php require_once('includes/charts.js.php'); ?>
+    <?php endif; ?>
+    
+    <script>
         // Download Chart Function
         function downloadChart(chartId, filename) {
             const canvas = document.getElementById(chartId);
-            const url = canvas.toDataURL('image/png');
+            if (!canvas) {
+                alert('Chart not found!');
+                return;
+            }
+            
+            // Get the chart instance to ensure it's rendered
+            let chart = null;
+            if (chartId === 'gradeDistChart') chart = window.gradeChart;
+            else if (chartId === 'assignmentTrendChart') chart = window.trendChart;
+            else if (chartId === 'assignmentStatsChart') chart = window.statsChart;
+            else if (chartId === 'sectionCompChart') chart = window.sectionChart;
+            
+            if (!chart) {
+                // Fallback to canvas if chart instance not found
+                try {
+                    const url = canvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    link.download = filename + '-' + new Date().getTime() + '.png';
+                    link.href = url;
+                    link.click();
+                    return;
+                } catch (e) {
+                    alert('Chart not initialized or no data available!');
+                    return;
+                }
+            }
+            
+            // Use Chart.js toBase64Image method for better quality
+            const url = chart.toBase64Image();
             const link = document.createElement('a');
             link.download = filename + '-' + new Date().getTime() + '.png';
             link.href = url;
@@ -1302,16 +1228,24 @@ $page_icon = 'fas fa-chart-bar';
             
             data.forEach((student, index) => {
                 const rank = index + 1;
+                
+                // Convert to numbers safely
+                const totalMarks = parseFloat(student.total_marks) || 0;
+                const avgMarks = parseFloat(student.avg_marks) || 0;
+                const totalSubmissions = parseInt(student.total_submissions) || 0;
+                const bonusSubmissions = parseInt(student.bonus_submissions) || 0;
+                const lateSubmissions = parseInt(student.late_submissions) || 0;
+                
                 const row = [
                     rank,
                     student.student_id,
                     `"${student.full_name}"`,
-                    student.email,
-                    (student.total_marks || 0).toFixed(1),
-                    (student.avg_marks || 0).toFixed(1),
-                    student.total_submissions || 0,
-                    student.bonus_submissions || 0,
-                    student.late_submissions || 0
+                    student.email || '',
+                    totalMarks.toFixed(1),
+                    avgMarks.toFixed(1),
+                    totalSubmissions,
+                    bonusSubmissions,
+                    lateSubmissions
                 ];
                 csv += row.join(',') + '\n';
             });
@@ -1324,11 +1258,15 @@ $page_icon = 'fas fa-chart-bar';
             link.click();
             window.URL.revokeObjectURL(url);
             <?php else: ?>
-            Swal.fire({
-                icon: 'info',
-                title: 'No Data',
-                text: 'No student data available to export.'
-            });
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'No Data',
+                    text: 'No student data available to export.'
+                });
+            } else {
+                alert('No student data available to export.');
+            }
             <?php endif; ?>
         }
     </script>

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 19, 2025 at 10:01 PM
+-- Generation Time: Oct 20, 2025 at 01:50 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -506,7 +506,8 @@ CREATE TABLE `assignments` (
 --
 
 INSERT INTO `assignments` (`assignment_id`, `course_id`, `teacher_id`, `trimester_id`, `section`, `title`, `description`, `assignment_type`, `total_marks`, `weight_percentage`, `file_path`, `due_date`, `late_submission_allowed`, `late_penalty_per_day`, `is_published`, `is_bonus`, `created_at`, `updated_at`) VALUES
-(2, 25, 3, 1, NULL, 'dsfsdfsdf', 'sdfsdfsd', 'homework', 100.00, NULL, 'uploads/assignments/assignment_1760900015_8823.pdf', '2025-10-22 00:53:00', 1, 5.00, 1, 0, '2025-10-19 18:53:35', '2025-10-19 19:03:11');
+(2, 25, 3, 1, NULL, 'dsfsdfsdf', 'sdfsdfsd', 'homework', 100.00, NULL, 'uploads/assignments/assignment_1760900015_8823.pdf', '2025-10-22 00:53:00', 1, 5.00, 1, 0, '2025-10-19 18:53:35', '2025-10-19 19:03:11'),
+(3, 25, 3, 1, NULL, 'new', 'new', 'homework', 100.00, NULL, NULL, '2025-10-22 03:28:00', 1, 5.00, 1, 0, '2025-10-19 21:28:56', '2025-10-19 21:28:56');
 
 -- --------------------------------------------------------
 
@@ -561,7 +562,8 @@ CREATE TABLE `assignment_submissions` (
 --
 
 INSERT INTO `assignment_submissions` (`submission_id`, `assignment_id`, `student_id`, `enrollment_id`, `file_path`, `file_size`, `file_type`, `submission_text`, `submitted_at`, `is_late`, `late_days`, `status`, `marks_obtained`, `feedback`, `graded_at`, `attempt_number`, `updated_at`) VALUES
-(1, 2, '0112320240', 34, 'uploads/submissions/submission_0112320240_2_1760902816.pdf', 2137263, 'application/pdf', '0', '2025-10-19 19:40:16', 0, 0, 'graded', 99.00, '', '2025-10-19 19:40:40', 1, '2025-10-19 19:40:40');
+(1, 2, '0112320240', 34, 'uploads/submissions/submission_0112320240_2_1760902816.pdf', 2137263, 'application/pdf', '0', '2025-10-19 19:40:16', 0, 0, 'graded', 99.00, '', '2025-10-19 19:40:40', 1, '2025-10-19 19:40:40'),
+(2, 3, '0112320240', 34, 'uploads/submissions/submission_0112320240_3_1760909364.pdf', 2137263, 'application/pdf', '0', '2025-10-19 21:29:24', 0, 0, 'graded', 100.00, 'good', '2025-10-19 21:29:51', 1, '2025-10-19 21:29:51');
 
 --
 -- Triggers `assignment_submissions`
@@ -732,42 +734,6 @@ CREATE TABLE `content_modules` (
   `is_published` tinyint(1) DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `course_materials`
---
-
-CREATE TABLE `course_materials` (
-  `content_id` int(11) NOT NULL,
-  `course_id` int(11) NOT NULL,
-  `teacher_id` int(11) NOT NULL,
-  `trimester_id` int(11) NOT NULL,
-  `section` varchar(10) DEFAULT NULL,
-  `title` varchar(255) NOT NULL,
-  `description` text DEFAULT NULL,
-  `content_type` enum('pdf','document','video','link','code','other') NOT NULL,
-  `file_path` varchar(500) DEFAULT NULL,
-  `external_url` varchar(500) DEFAULT NULL,
-  `content_text` longtext DEFAULT NULL,
-  `file_size` bigint(20) DEFAULT NULL,
-  `mime_type` varchar(100) DEFAULT NULL,
-  `is_published` tinyint(1) DEFAULT 1,
-  `view_count` int(11) DEFAULT 0,
-  `download_count` int(11) DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  KEY `idx_course_section` (`course_id`,`section`),
-  KEY `idx_teacher` (`teacher_id`),
-  KEY `idx_published` (`is_published`),
-  KEY `course_id` (`course_id`),
-  KEY `teacher_id` (`teacher_id`),
-  KEY `trimester_id` (`trimester_id`),
-  CONSTRAINT `course_materials_ibfk_1` FOREIGN KEY (`course_id`) REFERENCES `courses` (`course_id`) ON DELETE CASCADE,
-  CONSTRAINT `course_materials_ibfk_2` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`teacher_id`) ON DELETE CASCADE,
-  CONSTRAINT `course_materials_ibfk_3` FOREIGN KEY (`trimester_id`) REFERENCES `trimesters` (`trimester_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -2350,14 +2316,6 @@ CREATE TABLE `resource_views` (
   `viewed_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Dumping data for table `resource_views`
---
-
-INSERT INTO `resource_views` (`view_id`, `resource_id`, `student_id`, `viewed_at`) VALUES
-(16, 12, '0112320240', '2025-10-19 16:10:33'),
-(17, 12, '0112320240', '2025-10-19 17:22:06');
-
 -- --------------------------------------------------------
 
 --
@@ -2374,6 +2332,10 @@ CREATE TABLE `students` (
   `blood_group` varchar(5) DEFAULT NULL,
   `father_name` varchar(100) DEFAULT NULL,
   `mother_name` varchar(100) DEFAULT NULL,
+  `address` text DEFAULT NULL COMMENT 'Student address',
+  `emergency_contact_name` varchar(100) DEFAULT NULL COMMENT 'Emergency contact person',
+  `emergency_contact_phone` varchar(20) DEFAULT NULL COMMENT 'Emergency contact phone',
+  `bio` text DEFAULT NULL COMMENT 'Student bio/about',
   `program_id` int(11) NOT NULL,
   `current_trimester_number` int(11) DEFAULT 1,
   `total_completed_credits` int(11) DEFAULT 0,
@@ -2384,15 +2346,17 @@ CREATE TABLE `students` (
   `status` enum('active','inactive','graduated','withdrawn') DEFAULT 'active',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `focus_streak` int(11) DEFAULT 0 COMMENT 'Current daily focus streak'
+  `focus_streak` int(11) DEFAULT 0 COMMENT 'Current daily focus streak',
+  `email_notifications_enabled` tinyint(1) DEFAULT 1 COMMENT 'Email notifications toggle (1=on, 0=off)',
+  `notification_preferences` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'JSON object for granular notification settings' CHECK (json_valid(`notification_preferences`))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `students`
 --
 
-INSERT INTO `students` (`student_id`, `password_hash`, `full_name`, `email`, `phone`, `date_of_birth`, `blood_group`, `father_name`, `mother_name`, `program_id`, `current_trimester_number`, `total_completed_credits`, `current_cgpa`, `total_points`, `profile_picture`, `admission_date`, `status`, `created_at`, `updated_at`, `focus_streak`) VALUES
-('0112320240', '$2y$10$xzeO35iY.jE08O8YRqA.xuvAqwA3gKbBPwscf5JJlT15cIoWtyJVS', 'Sifatullah', NULL, '+8801608962341', '2004-08-22', 'A+', 'Mohammad Abdus Salam', 'Shoheli Parvin Nazma', 1, 1, 65, 4.00, 60, '9cf6a546-c5d4-42b1-8c18-6e9cccd167ca.jpg', NULL, 'active', '2025-10-19 14:08:05', '2025-10-19 19:40:16', 0);
+INSERT INTO `students` (`student_id`, `password_hash`, `full_name`, `email`, `phone`, `date_of_birth`, `blood_group`, `father_name`, `mother_name`, `address`, `emergency_contact_name`, `emergency_contact_phone`, `bio`, `program_id`, `current_trimester_number`, `total_completed_credits`, `current_cgpa`, `total_points`, `profile_picture`, `admission_date`, `status`, `created_at`, `updated_at`, `focus_streak`, `email_notifications_enabled`, `notification_preferences`) VALUES
+('0112320240', '$2y$10$xzeO35iY.jE08O8YRqA.xuvAqwA3gKbBPwscf5JJlT15cIoWtyJVS', 'Sifatullah', 'sifatullah2320240@bscse.uiu.ac.bd', '+8801608962341', '2004-08-22', 'A+', 'Mohammad Abdus Salam', 'Shoheli Parvin Nazma', NULL, NULL, NULL, NULL, 1, 1, 0, 4.00, 0, '9cf6a546-c5d4-42b1-8c18-6e9cccd167ca.jpg', NULL, 'active', '2025-10-19 14:08:05', '2025-10-19 23:25:48', 0, 1, '{\"assignment_reminders\": true, \"grade_updates\": true, \"course_announcements\": true, \"schedule_changes\": true, \"resource_updates\": false, \"achievement_notifications\": true}');
 
 -- --------------------------------------------------------
 
@@ -2436,7 +2400,8 @@ INSERT INTO `student_activities` (`activity_id`, `student_id`, `activity_type`, 
 (54, '0112320240', 'todo_complete', 'Completed task', 'Integrate Teacher part', NULL, 4, 'fa-check-circle', '2025-10-19 14:18:18'),
 (55, '0112320240', 'note_upload', 'Uploaded Resource', 'Uploaded: abc', 33, 12, 'fa-upload', '2025-10-19 16:02:02'),
 (56, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-19 17:21:06'),
-(57, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-19 18:52:10');
+(57, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-19 18:52:10'),
+(58, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-19 22:43:40');
 
 -- --------------------------------------------------------
 
@@ -2508,7 +2473,9 @@ CREATE TABLE `student_notifications` (
 
 INSERT INTO `student_notifications` (`notification_id`, `student_id`, `notification_type`, `title`, `message`, `link`, `is_read`, `priority`, `created_at`, `read_at`) VALUES
 (1, '0112320240', 'assignment', 'New Assignment Posted', 'New assignment \"dsfsdfsdf\" has been posted for CSE 3522', '/student/assignment_detail.php?id=2', 0, 'normal', '2025-10-19 19:03:11', NULL),
-(2, '0112320240', 'grade', 'Assignment Graded', 'Your submission for \"dsfsdfsdf\" has been graded. Score: 99/100.00', '/student/assignment_detail.php?id=2', 0, 'normal', '2025-10-19 19:40:40', NULL);
+(2, '0112320240', 'grade', 'Assignment Graded', 'Your submission for \"dsfsdfsdf\" has been graded. Score: 99/100.00', '/student/assignment_detail.php?id=2', 0, 'normal', '2025-10-19 19:40:40', NULL),
+(3, '0112320240', 'assignment', 'New Assignment Posted', 'New assignment \"new\" has been posted for CSE 3522', '/student/assignment_detail.php?id=', 0, 'normal', '2025-10-19 21:28:56', NULL),
+(4, '0112320240', 'grade', 'Assignment Graded', 'Your submission for \"new\" has been graded. Score: 100/100.00', '/student/assignment_detail.php?id=3', 0, 'normal', '2025-10-19 21:29:51', NULL);
 
 -- --------------------------------------------------------
 
@@ -2728,7 +2695,8 @@ CREATE TABLE `teacher_notifications` (
 --
 
 INSERT INTO `teacher_notifications` (`notification_id`, `teacher_id`, `notification_type`, `title`, `message`, `related_type`, `related_id`, `action_url`, `is_read`, `priority`, `created_at`, `read_at`) VALUES
-(1, 3, 'new_submission', 'New Submission Received', 'Student 0112320240 submitted \"dsfsdfsdf\" on time', 'submission', 1, NULL, 0, 'normal', '2025-10-19 19:40:16', NULL);
+(1, 3, 'new_submission', 'New Submission Received', 'Student 0112320240 submitted \"dsfsdfsdf\" on time', 'submission', 1, NULL, 0, 'normal', '2025-10-19 19:40:16', NULL),
+(2, 3, 'new_submission', 'New Submission Received', 'Student 0112320240 submitted \"new\" on time', 'submission', 2, NULL, 0, 'normal', '2025-10-19 21:29:24', NULL);
 
 -- --------------------------------------------------------
 
@@ -2755,7 +2723,9 @@ CREATE TABLE `teacher_sessions` (
 INSERT INTO `teacher_sessions` (`session_id`, `teacher_id`, `session_token`, `ip_address`, `user_agent`, `login_time`, `last_activity`, `expires_at`, `is_active`) VALUES
 (1, 3, '482a534f93221e2602a1ba2c2e1b7ce659680f7de7ccb2724567c55357c3f862', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0', '2025-10-19 17:07:20', '2025-10-19 17:07:20', '2025-10-19 15:07:20', 1),
 (2, 3, '8a66f0a64844e079be67710cd5c72503fc5e7b96f70637a27eb3471c44f4b45e', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0', '2025-10-19 17:20:01', '2025-10-19 17:20:01', '2025-10-19 15:20:01', 1),
-(3, 3, '939e7878dca1292786513e2c1279cba023e6bcaeb373265a0d1c466aa589411c', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0', '2025-10-19 17:25:18', '2025-10-19 17:25:18', '2025-10-19 15:25:18', 1);
+(3, 3, '939e7878dca1292786513e2c1279cba023e6bcaeb373265a0d1c466aa589411c', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0', '2025-10-19 17:25:18', '2025-10-19 17:25:18', '2025-10-19 15:25:18', 1),
+(4, 3, '8c38cf23bb977202490b59a8f12f7afc8a85583067cfc6f624dff4bf344b5e34', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0', '2025-10-19 20:48:15', '2025-10-19 20:48:15', '2025-10-19 18:48:15', 1),
+(5, 3, '992bd64f8ea2c39b9627f537089a17a97e1fdec4e4682669324d557ff1fc4f00', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0', '2025-10-19 21:49:25', '2025-10-19 21:49:25', '2025-10-19 19:49:25', 1);
 
 -- --------------------------------------------------------
 
@@ -2811,13 +2781,6 @@ CREATE TABLE `uploaded_resources` (
   `is_featured` tinyint(1) DEFAULT 0,
   `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Uploaded resources and notes by students';
-
---
--- Dumping data for table `uploaded_resources`
---
-
-INSERT INTO `uploaded_resources` (`resource_id`, `student_id`, `course_id`, `category_id`, `title`, `description`, `resource_type`, `file_path`, `file_name`, `file_size`, `file_type`, `external_link`, `trimester_id`, `points_awarded`, `views_count`, `downloads_count`, `likes_count`, `is_approved`, `is_featured`, `uploaded_at`) VALUES
-(12, '0112320240', 33, 3, 'abc', '', 'file', 'uploads/resources/0112320240_1760889722_68f50b7a59c75.pdf', 'SRS Draft by me.pdf', 2137263, '0', '', NULL, 50, 2, 0, 0, 1, 0, '2025-10-19 16:02:02');
 
 --
 -- Triggers `uploaded_resources`
@@ -3320,7 +3283,8 @@ ALTER TABLE `students`
   ADD KEY `idx_status` (`status`),
   ADD KEY `idx_student_cgpa` (`current_cgpa`),
   ADD KEY `idx_student_credits` (`total_completed_credits`),
-  ADD KEY `idx_student_points` (`total_points`);
+  ADD KEY `idx_student_points` (`total_points`),
+  ADD KEY `idx_email_notifications` (`email_notifications_enabled`);
 
 --
 -- Indexes for table `student_achievements`
@@ -3507,7 +3471,7 @@ ALTER TABLE `announcement_reads`
 -- AUTO_INCREMENT for table `assignments`
 --
 ALTER TABLE `assignments`
-  MODIFY `assignment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `assignment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `assignment_analytics`
@@ -3519,7 +3483,7 @@ ALTER TABLE `assignment_analytics`
 -- AUTO_INCREMENT for table `assignment_submissions`
 --
 ALTER TABLE `assignment_submissions`
-  MODIFY `submission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `submission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `attendance`
@@ -3675,7 +3639,7 @@ ALTER TABLE `resource_likes`
 -- AUTO_INCREMENT for table `resource_views`
 --
 ALTER TABLE `resource_views`
-  MODIFY `view_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `view_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `student_achievements`
@@ -3687,7 +3651,7 @@ ALTER TABLE `student_achievements`
 -- AUTO_INCREMENT for table `student_activities`
 --
 ALTER TABLE `student_activities`
-  MODIFY `activity_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
+  MODIFY `activity_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
 
 --
 -- AUTO_INCREMENT for table `student_advisors`
@@ -3705,7 +3669,7 @@ ALTER TABLE `student_billing`
 -- AUTO_INCREMENT for table `student_notifications`
 --
 ALTER TABLE `student_notifications`
-  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `student_points`
@@ -3747,13 +3711,13 @@ ALTER TABLE `teacher_announcements`
 -- AUTO_INCREMENT for table `teacher_notifications`
 --
 ALTER TABLE `teacher_notifications`
-  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `teacher_sessions`
 --
 ALTER TABLE `teacher_sessions`
-  MODIFY `session_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `session_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `trimesters`

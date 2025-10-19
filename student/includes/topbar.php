@@ -148,7 +148,7 @@ if (!isset($page_icon)) {
                 <p>Back to home</p>
             </div>
         </a>
-        <a href="#" class="notification-item">
+        <a href="profile.php" class="notification-item">
             <i class="fas fa-user" style="color: #3b82f6;"></i>
             <div>
                 <strong>My Profile</strong>
@@ -169,7 +169,7 @@ if (!isset($page_icon)) {
                 <p>Browse study materials</p>
             </div>
         </a>
-        <a href="#" class="notification-item">
+        <a href="settings.php" class="notification-item">
             <i class="fas fa-cog" style="color: #6b7280;"></i>
             <div>
                 <strong>Settings</strong>

@@ -40,7 +40,11 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
             <i class="fas fa-trophy"></i>
             <span>Achievements</span>
         </a>
-        <a href="#" class="nav-item <?php echo $current_page == 'settings' ? 'active' : ''; ?>">
+        <a href="profile.php" class="nav-item <?php echo $current_page == 'profile' ? 'active' : ''; ?>">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </a>
+        <a href="settings.php" class="nav-item <?php echo $current_page == 'settings' ? 'active' : ''; ?>">
             <i class="fas fa-cog"></i>
             <span>Settings</span>
         </a>

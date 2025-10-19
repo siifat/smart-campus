@@ -2059,7 +2059,10 @@ $show_page_title = true;
         
         // View resource in dedicated viewer
         function viewResource(resourceId, sourcePath = null) {
-            if (resourceId.startsWith('qb_')) {
+            // Convert to string for comparison
+            const resourceIdStr = String(resourceId);
+            
+            if (resourceIdStr.startsWith('qb_')) {
                 // Question bank resource
                 window.location.href = `viewer.php?id=${encodeURIComponent(resourceId)}&source=questionbank&path=${encodeURIComponent(sourcePath)}`;
             } else {

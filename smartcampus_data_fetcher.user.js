@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         UIU Smart Campus Data Fetcher
 // @namespace    http://tampermonkey.net/
-// @version      2.0.0
+// @version      2.1.0
 // @description  Fetches student data from UCAM portal and syncs to Smart Campus database (including password capture)
 // @author       UIU Smart Campus Team
 // @match        *://ucam.uiu.ac.bd/Security/Login.aspx*

@@ -211,8 +211,20 @@
             data.advisor_room = document.getElementById('ctl00_MainContainer_lblAdvisorRoom')?.innerText.trim() || '';
 
             // Current Trimester Information
-            const currentTrimester = document.getElementById('ctl00_lblCurrent')?.innerText.trim() || '';
-            data.current_trimester = currentTrimester;
+            const currentTrimesterText = document.getElementById('ctl00_lblCurrent')?.innerText.trim() || '';
+            // Parse trimester: "253 - Fall 2025 (Semester), 252 - Summer 2025 (Trimester)"
+            // We need the Trimester part only (not Semester)
+            const trimesterMatch = currentTrimesterText.match(/(\d+)\s*-\s*([^(]+)\s*\(Trimester\)/);
+            if (trimesterMatch) {
+                data.current_trimester_code = trimesterMatch[1]; // e.g., "252"
+                data.current_trimester_name = trimesterMatch[2].trim(); // e.g., "Summer 2025"
+                data.current_trimester = `${trimesterMatch[1]} - ${trimesterMatch[2].trim()}`; // e.g., "252 - Summer 2025"
+            } else {
+                // Fallback: if no trimester found, use the full text
+                data.current_trimester = currentTrimesterText;
+                data.current_trimester_code = '';
+                data.current_trimester_name = '';
+            }
 
             // Extract Class Routine
             data.class_routine = extractClassRoutine();
@@ -428,10 +440,15 @@
                             ? '✅ Password: Captured & Synced' 
                             : '⚠️ Password: Not available (login again to capture)';
                         
+                        const trimesterInfo = result.data.current_trimester 
+                            ? '\nCurrent Trimester: ' + result.data.current_trimester 
+                            : '';
+                        
                         alert('✅ Data synced successfully to Smart Campus database!\n\n' + 
                               'Student: ' + data.full_name + '\n' +
                               'ID: ' + data.student_id + '\n' +
-                              passwordStatus + '\n' +
+                              passwordStatus + 
+                              trimesterInfo + '\n' +
                               'Courses synced: ' + data.class_routine.length + '\n\n' +
                               (result.data.password_synced 
                                 ? 'You can now login to Smart Campus with your UCAM password!' 

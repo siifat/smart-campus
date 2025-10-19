@@ -1,0 +1,2065 @@
+﻿/*Start=========================Admin=========================Start*/
+
+/*Start FacultyPerformanceIndex.aspx Start*/
+.FacultyPerformanceIndex{
+}
+.FacultyPerformanceIndex-container .div-margin
+{
+	margin: 5px 0;
+}
+.FacultyPerformanceIndex-container .loadArea
+{
+	margin-top: 10px;
+	border-top: 1px solid #ffd800;
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.FacultyPerformanceIndex-container .loadedArea
+{
+	border-bottom: 1px solid #ffd800;
+    background-color: #f9f9f9;
+    padding: 5px;
+}
+.FacultyPerformanceIndex-container .field-Title
+{
+	padding-right: 5px;
+    width: 70px;
+    font-weight: bold;
+}
+.FacultyPerformanceIndex-container .field-Title2
+{
+    padding-left: 15px;
+	padding-right: 5px;
+    width: 70px;
+    font-weight: bold;
+}
+.FacultyPerformanceIndex-container .dropDownList
+{
+	padding: 0px 5px;
+	width: 160px;
+}
+.FacultyPerformanceIndex-container .dropDownList2
+{
+	padding: 0px 5px;
+	width: 320px;
+}
+.FacultyPerformanceIndex-container .btn-size {
+    margin-left: 15px;
+    padding: 0 10px;
+    cursor: pointer;
+    width: 120px;
+    font-weight: bold;
+}
+.FacultyPerformanceIndex-container .btn-size:hover {
+    color: gray;
+}
+/*End FacultyPerformanceIndex.aspx End*/
+
+/*Start ForgetPassword-container Start*/
+/*ForgetPassword.aspx*/
+
+.Main-ForgetPassword-container
+{
+	width: 500px;
+	/*background-color: #d9eaf7;*/
+	padding: 20px;
+	/*margin: 0 auto;*/
+	border: 10px #d9ef95 solid;
+	position: fixed; /* or absolute */
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+.Main-ForgetPassword-container .PageTitle
+{
+    margin-top: 10px;
+}
+.Main-ForgetPassword-container .PageTitle label
+{
+    color: black;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 2px;
+    word-spacing: 3px;
+}
+.Main-ForgetPassword-container .Message-Area
+{
+    margin-top: 5px;
+    margin-bottom: 15px;
+    border-top: 1px solid #FFA500;
+    border-bottom: 1px solid #FFA500;
+    background-color: #f9f9f9;
+    padding: 2px;
+}
+.Main-ForgetPassword-container .Message-Area .msgTitle
+{
+    font-weight: bold;
+    font-size: 9pt;
+}
+.Main-ForgetPassword-container .Message-Area #lblMsg
+{
+    color: red;
+}
+.Main-ForgetPassword-container .floatLeft
+{
+    float: left;
+}
+.Main-ForgetPassword-container .floatRight
+{
+    float: right;
+}
+.ForgetPassword-container .display-inline
+{
+	display: inline-block;
+}
+.ForgetPassword-container .margin-zero
+{
+	margin: 0px;
+}
+.ForgetPassword-container .field-Title
+{
+	width: 60px;
+}
+.ForgetPassword-container .field-Title1
+{
+	width: 68px;
+}
+.ForgetPassword-container .title-flag
+{
+	margin-bottom: 15px;
+}
+.ForgetPassword-container .input-Size
+{
+	width: 170px;
+	border-color: #d9eaf7;
+}
+.ForgetPassword-container .div-margin
+{
+	margin: 10px 0;
+}
+.ForgetPassword-container .btn-size
+{
+	width: 130px;
+	margin-left: 7px;
+}
+.ForgetPassword-container .imgList
+{
+	height: auto;
+	width: 30px;
+}
+.ForgetPassword-container .warning
+{
+	color: red;
+}
+
+/*End UserCreate-container End*/
+
+/*Start PasswordChangeByAdmin-container Start*/
+/*PasswordChangeByAdmin*/
+
+.PasswordChangeByAdmin-container .field-Title
+{
+	width: 50px;
+}
+.PasswordChangeByAdmin-container .SearchKey
+{
+	margin-left: -6px;
+	padding: 1px;
+}
+.PasswordChangeByAdmin-container .input-Size
+{
+	width: 120px;
+}
+.PasswordChangeByAdmin-container .dropDownList
+{
+	width: 123px;
+}
+.PasswordChangeByAdmin-container .div-margin
+{
+	margin: 10px 0;
+}
+.PasswordChangeByAdmin-container .btn-size
+{
+	width: 140px;
+}
+.PasswordChangeByAdmin-container #ctl00_MainContainer_lblPassword
+{
+	display: inline-block;
+	margin-left: 20px;
+	font-weight: bold;
+	color: #005782;
+}
+.PasswordChangeByAdmin-container #ctl00_MainContainer_lblMailStatus
+{
+	display: inline-block;
+	margin-left: 20px;
+	font-weight: bold;
+	color: #005782;
+}
+
+/*End PasswordChangeByAdmin-container End*/
+
+/*Start UserAccessControl-container Start*/
+/*UserAccessControl.aspx*/
+
+.UserAccessControl-container .field-Title
+{
+	width: 100px;
+}
+.UserAccessControl-container .field-Title2
+{
+	width: 100px;
+	margin-left: 20px;
+}
+.UserAccessControl-container .input-Size
+{
+	width: 120px;
+}
+.UserAccessControl-container .input-Size2
+{
+	width: 160px;
+}
+.UserAccessControl-container .input-Size5
+{
+	width: 500px;
+}
+.UserAccessControl-container .dropDownList
+{
+	width: 123px;
+}
+.UserAccessControl-container .dropDownList1
+{
+	width: 163px;
+}
+.UserAccessControl-container .SearchKey
+{
+	margin-left: -6px;
+	padding: 2px;
+}
+.UserAccessControl-container .CommonPanel
+{
+	border: 3px solid #F2F2F2;
+	padding: 5px;
+	margin-right: 10px;
+}
+.UserAccessControl-container .RolePanel, .UserAccessControl-container .ButtonPanel
+{
+	width: 620px;
+}
+.UserAccessControl-container .div-margin
+{
+	margin: 10px 0;
+}
+.UserAccessControl-container .loadingPanel
+{
+	height: 18px;
+}
+.UserAccessControl-container .btn-size
+{
+	width: 120px;
+}
+.UserAccessControl-container .tableStyle
+{
+	width: 100%;
+}
+.UserAccessControl-container .tableStyle,
+.UserAccessControl-container .tableStyle tr,
+.UserAccessControl-container .tableStyle tr th,
+.UserAccessControl-container .tableStyle tr td
+{
+	border: none;
+	text-align: center;
+}
+.UserAccessControl-container .lblMsg
+{
+	color: red;
+}
+
+/*End PersonUserRelation-container End*/
+
+/*Start WelcomeEmailEntry-container Start*/
+/*WelcomeEmailEntry.aspx*/
+
+.WelcomeEmailEntry-container .div-margin
+{
+	margin: 10px 0;
+}
+.WelcomeEmailEntry-container .loadArea
+{
+	margin-top: 20px;
+	/*border: 1px solid #aaa;*/
+	background-color: #f9f9f9;
+	padding: 5px;
+	width: 250px;
+}
+.WelcomeEmailEntry-container .field-Title
+{
+	font-weight: bold;
+    width: 98px;
+}
+.WelcomeEmailEntry-container .wee-style
+{
+	margin-top: 10px;
+}
+	.WelcomeEmailEntry-container .wee-style #ctl00_MainContainer_btnSkip
+	{
+		margin-left: 81px;
+		width: 60px;
+	}
+.WelcomeEmailEntry-container .input-Size
+{
+}
+.WelcomeEmailEntry-container .btn-size
+{
+	cursor: pointer;
+}
+
+/*End WelcomeEmailEntry-container End*/
+
+/*End=========================Admin=========================End*/
+
+/*Start=========================Bill=========================Start*/
+
+/*Start DiscountContinuationSetup-container Start*/
+
+.DiscountContinuationSetup-container .field-Title
+{
+	width: 70px;
+}
+.DiscountContinuationSetup-container .field-Title2
+{
+	width: 75px;
+	margin-left: 5px;
+}
+.DiscountContinuationSetup-container .input-Size
+{
+	width: 40px;
+}
+.DiscountContinuationSetup-container .input-Size1
+{
+	width: 40px;
+	text-align: center;
+}
+.DiscountContinuationSetup-container .dropDownList
+{
+	width: 123px;
+}
+.DiscountContinuationSetup-container .div-margin
+{
+	margin: 10px 0;
+}
+.DiscountContinuationSetup-container .btn-size
+{
+}
+.DiscountContinuationSetup-container .btn-size2
+{
+	padding: 2px 0px;
+	margin-left: 5px;
+}
+.DiscountContinuationSetup-container .loadArea
+{
+	margin-top: 20px;
+	border: 1px solid #aaa;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.DiscountContinuationSetup-container .loadedArea
+{
+	border: 1px solid #aaa;
+	border-top: none;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.DiscountContinuationSetup-container table, .DiscountContinuationSetup-container tr, .DiscountContinuationSetup-container th
+{
+	border: 1px solid #008080;
+}
+.DiscountContinuationSetup-container .tableHead
+{
+	background-color: #008080;
+	color: #d9eaf7;
+	position: relative;
+}
+.DiscountContinuationSetup-container .action-container img
+{
+	padding: 1px;
+	height: auto;
+	width: 20px;
+}
+
+/*End DiscountContinuationSetup-container End*/
+
+/*Start ScholarshipListGenerate-container Start*/
+.ScholarshipListGenerate-container label,
+.ScholarshipListGenerate-container select,
+.ScholarshipListGenerate-container input
+{
+	/*font-size: 11px;*/
+}
+.ScholarshipListGenerate-container .field-Title
+{
+	width: 80px;
+}
+.ScholarshipListGenerate-container .field-Title2
+{
+	width: 70px;
+	margin-left: 10px;
+}
+.ScholarshipListGenerate-container .field-Title3
+{
+	width: 20px;
+	margin-right: 5px;
+	font-weight: bold;
+	color: #008080;
+}
+.ScholarshipListGenerate-container .field-Title4
+{
+	width: 20px;
+	margin-left: 5px;
+	margin-right: 5px;
+	font-weight: bold;
+	color: #008080;
+}
+.ScholarshipListGenerate-container .field-Title5
+{
+	width: 84px;
+	margin-left: 5px;
+	margin-right: 5px;
+	color: #b61111;
+	text-align: center;
+}
+.ScholarshipListGenerate-container .field-Title6
+{
+	width: 120px;
+	margin-right: 5px;
+	font-weight: bold;
+	color: #008080;
+}
+.ScholarshipListGenerate-container .input-Size
+{
+	width: 40px;
+}
+.ScholarshipListGenerate-container .input-Size1
+{
+	width: 40px;
+	text-align: center;
+}
+.ScholarshipListGenerate-container .dropDownList
+{
+	width: 150px;
+}
+.ScholarshipListGenerate-container .disabledrowload1 .aspNetDisabled
+{
+	width: 150px;
+}
+.ScholarshipListGenerate-container .disabledrowload2 .aspNetDisabled
+{
+	width: 84px;
+	margin-left: 10px;
+}
+.ScholarshipListGenerate-container .div-margin
+{
+	margin: 10px 0;
+}
+.ScholarshipListGenerate-container .btn-size
+{
+	width: 150px;
+}
+.ScholarshipListGenerate-container .btn-size2
+{
+	width: 60px;
+	padding: 2px 0px;
+	margin-left: 5px;
+}
+.ScholarshipListGenerate-container .loadArea
+{
+	margin-top: 20px;
+	border-top: 1px solid #FFA500;
+	border-bottom: 1px solid #FFA500;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.ScholarshipListGenerate-container .loadedArea
+{
+	border-bottom: 1px solid #FFA500;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.ScholarshipListGenerate-container #MainContainer_PnlScholarship .mainTable
+{
+	width: 900px;
+}
+.ScholarshipListGenerate-container table, .ScholarshipListGenerate-container tr, .ScholarshipListGenerate-container th
+{
+	border: 1px solid #008080;
+}
+.ScholarshipListGenerate-container table, .ScholarshipListGenerate-container tr, .ScholarshipListGenerate-container td input
+{
+	text-align: center;
+	margin-left: 0px;
+}
+.ScholarshipListGenerate-container .tableHead
+{
+	background-color: #008080;
+	color: #d9eaf7;
+	position: relative;
+}
+.ScholarshipListGenerate-container table input
+{
+	width: 50px;
+	font-size: 13px;
+}
+
+/*End ScholarshipListGenerate-container End*/
+
+
+/*Start ScholarshipGenerate-container Start*/
+.ScholarshipGenerate-container label,
+.ScholarshipGenerate-container select,
+.ScholarshipGenerate-container input
+{
+	/*font-size: 11px;*/
+}
+.ScholarshipGenerate-container .field-Title
+{
+	width: 80px;
+}
+.ScholarshipGenerate-container .field-Title2
+{
+	width: 70px;
+	margin-left: 10px;
+}
+.ScholarshipGenerate-container .field-Title3
+{
+	width: 20px;
+	margin-right: 5px;
+	font-weight: bold;
+	color: #008080;
+}
+.ScholarshipGenerate-container .field-Title4
+{
+	width: 20px;
+	margin-left: 5px;
+	margin-right: 5px;
+	font-weight: bold;
+	color: #008080;
+}
+.ScholarshipGenerate-container .field-Title5
+{
+	width: 84px;
+	margin-left: 5px;
+	margin-right: 5px;
+	color: #b61111;
+	text-align: center;
+}
+.ScholarshipGenerate-container .field-Title6
+{
+	width: 120px;
+	margin-right: 5px;
+	font-weight: bold;
+	color: #008080;
+}
+.ScholarshipGenerate-container .input-Size
+{
+	width: 40px;
+}
+.ScholarshipGenerate-container .input-Size1
+{
+	width: 40px;
+	text-align: center;
+}
+.ScholarshipGenerate-container .dropDownList
+{
+	width: 150px;
+}
+.ScholarshipGenerate-container .disabledrowload1 .aspNetDisabled
+{
+	width: 150px;
+}
+.ScholarshipGenerate-container .disabledrowload2 .aspNetDisabled
+{
+	width: 84px;
+	margin-left: 10px;
+}
+.ScholarshipGenerate-container .div-margin
+{
+	margin: 10px 0;
+}
+.ScholarshipGenerate-container .btn-size
+{
+	width: 150px;
+}
+.ScholarshipGenerate-container .btn-size2
+{
+	width: 60px;
+	padding: 2px 0px;
+	margin-left: 5px;
+}
+.ScholarshipGenerate-container .loadArea
+{
+	margin-top: 20px;
+	border-top: 1px solid #FFA500;
+	border-bottom: 1px solid #FFA500;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.ScholarshipGenerate-container .loadedArea
+{
+	border-bottom: 1px solid #FFA500;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.ScholarshipGenerate-container #MainContainer_PnlScholarship .mainTable
+{
+	width: 900px;
+}
+.ScholarshipGenerate-container table, .ScholarshipGenerate-container tr, .ScholarshipGenerate-container th
+{
+	border: 1px solid #008080;
+}
+.ScholarshipGenerate-container table, .ScholarshipGenerate-container tr, .ScholarshipGenerate-container td input
+{
+	text-align: center;
+	margin-left: 0px;
+}
+.ScholarshipGenerate-container .tableHead
+{
+	background-color: #008080;
+	color: #d9eaf7;
+	position: relative;
+}
+.ScholarshipGenerate-container table input
+{
+	width: 50px;
+	font-size: 13px;
+}
+.ScholarshipGenerate-container #ctl00_MainContainer_cblProgram, .ScholarshipGenerate-container #ctl00_MainContainer_cblProgram tbody {
+    display: block;
+    border: none;
+}
+.ScholarshipGenerate-container .loadedArea #ctl00_MainContainer_cblProgram tbody tr {
+        float: left;
+        border: none;
+    }
+.ScholarshipGenerate-container .loadedArea #ctl00_MainContainer_cblProgram tbody tr input
+{
+	width: 12px;
+	font-size: 12px;
+}
+
+/*End ScholarshipGenerate-container End*/
+
+/*End=========================Bill=========================End*/
+
+/*Start=========================Employee=========================Start*/
+/*Start EvaluationFormTheory-container Start*/
+/*EvaluationForm.aspx*/
+
+.EvaluationFormTheory-container .field-Title{
+    width: 60px;
+}
+.EvaluationFormTheory-container .field-Title1{
+    margin: 0px 5px;
+}
+.EvaluationFormTheory-container .dropDownList {
+    width: 400px;
+}
+.EvaluationFormTheory-container .dropDownList2 {
+    width: 70px;
+}
+.EvaluationFormTheory-container .div-margin {
+    margin: 10px 0;
+}
+.EvaluationFormTheory-container .div-margin1 {
+    margin: 30px 0;
+}
+.EvaluationFormTheory-container .btn-size {
+    width: 130px;
+}
+.EvaluationFormTheory-container .loadArea
+{
+	margin-top: 10px;
+	border-top: 1px solid #ffd800;
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.EvaluationFormTheory-container .loadedArea
+{
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.EvaluationFormTheory-container .field-Title-Fix {
+    display: inline-block;
+}
+.EvaluationFormTheory-container .field-Title-Fix2 {
+    display: inline-block;
+    width: 150px;
+}
+.EvaluationFormTheory table {
+    width: 100%;
+}
+.EvaluationFormTheory-container .rdbOpinion input {
+    margin: 0px;
+}
+.EvaluationFormTheory-container .rdbOpinion label {
+    display: inline-block;
+    padding: 0 5px;
+}
+.EvaluationFormTheory-container .evaluationTable .question-Block {
+    display: inline-block;
+    padding-bottom: 5px;
+}
+.EvaluationFormTheory-container .evaluationTable th {
+    background-color: #CC9966;
+}
+.EvaluationFormTheory-container .evaluationTable .head-title {
+    text-align: left;
+}
+.EvaluationFormTheory-container .inquiresTitle {
+    font-weight: bold;
+}
+
+/*End EvaluationFormTheory-container End*/
+
+/*Start EvaluationSummary-container Start*/
+/*EvaluationSummary.aspx*/
+
+.EvaluationSummary-container .field-Title{
+    width: 70px;
+}
+.EvaluationSummary-container .field-Title2 {
+    width: 70px;
+    margin-left: 55px;
+}
+.EvaluationSummary-container .dropDownList {
+    width: 123px;
+}
+.EvaluationSummary-container .dropDownList2 {
+    width: 379px;
+}
+.EvaluationSummary-container .div-margin {
+    margin: 10px 0;
+}
+.EvaluationSummary-container .btn-size {
+    width: 100px;
+}
+.EvaluationSummary-container .input-Size {
+    width: 160px;
+}
+.EvaluationSummary-container .SearchKey {
+    margin-left: -6px;
+    padding: 2px;
+}
+.EvaluationSummary-container .loadArea
+{
+	margin-top: 10px;
+	border-top: 1px solid #ffd800;
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.EvaluationSummary-container .loadedArea
+{
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.EvaluationSummary-container table, .EvaluationSummary-container tr, .EvaluationSummary-container th {
+    border: 1px solid #008080;
+}
+.EvaluationSummary-container .tableHead {
+    background-color: #008080;
+    color: #d9eaf7;
+    position: relative;
+}
+
+/*End EvaluationSummary-container End*/
+
+/*Start EvaluationVarify-container Start*/
+/*EvaluationVarify*/
+
+.EvaluationVarify-container .field-Title{
+    width: 65px;
+}
+.EvaluationVarify-container .field-Title2 {
+    padding: 0px 5px;
+}
+.EvaluationVarify-container .dropDownList {
+    width: 160px;
+}
+.EvaluationVarify-container .div-margin {
+    margin: 10px 0;
+}
+.EvaluationVarify-container .btn-size {
+    width: 120px;
+    margin-left: 5px;
+}
+.EvaluationVarify-container .input-Size {
+    width: 118px;
+}
+.EvaluationVarify-container .SearchKey {
+    margin-left: -6px;
+    padding: 2px;
+}
+.EvaluationVarify-container .loadArea
+{
+	margin-top: 10px;
+	border-top: 1px solid #ffd800;
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.EvaluationVarify-container .loadedArea
+{
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.EvaluationVarify-container table, .EvaluationVarify-container tr, .EvaluationVarify-container th {
+    border: 1px solid #008080;
+}
+.EvaluationVarify-container .tableHead {
+    background-color: #008080;
+    color: #d9eaf7;
+    position: relative;
+}
+
+/*End EvaluationVarify-container End*/
+
+/*Start EvaluationGraph-container Start*/
+/*EvaluationGraph*/
+
+.EvaluationGraph-container label,
+.EvaluationGraph-container select,
+.EvaluationGraph-container input
+{
+	/*font-size: 11px;*/
+}
+.EvaluationGraph-container .div-margin
+{
+	margin: 5px 0;
+}
+.EvaluationGraph-container .loadArea
+{
+	margin-top: 10px;
+	border-top: 1px solid #ffd800;
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.EvaluationGraph-container .loadedArea
+{
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.EvaluationGraph-container .field-Title
+{
+	padding-right: 5px;
+}
+.EvaluationGraph-container .field-Title1
+{
+	width: 51px;
+}
+.EvaluationGraph-container .dropDownList
+{
+	padding: 0px 5px;
+}
+.EvaluationGraph-container .dropDownList1
+{
+	width: 250px;
+}
+.EvaluationGraph-container .input-Size
+{
+	width: 150px;
+}
+.EvaluationGraph-container .btn-size
+{
+	padding: 0px 10px;
+}
+.EvaluationGraph-container .widthHeight {
+    width:220px;
+    height: 300px;
+}
+.EvaluationGraph-container table, 
+.EvaluationGraph-container tr, 
+.EvaluationGraph-container #ctl00_MainContainer_gvComment
+{
+	min-width: 650px;
+	max-width: 800px;
+}
+.EvaluationGraph-container .field-Title-Fix {
+    display: inline-block;
+}
+.EvaluationGraph-container .field-Title-Fix2 {
+    display: inline-block;
+    width: 150px;
+}
+
+/*End EvaluationGraph-container End*/
+
+/*End=========================Employee=========================End*/
+
+
+/*Start=========================Scheduler=========================Start*/
+
+/*Start ClassSchedule-container Start*/
+/*ClassRoutine.aspx*/
+.ClassSchedule-container label,
+.ClassSchedule-container select,
+.ClassSchedule-container input
+{
+	/*font-size: 11px;*/
+}
+.ClassSchedule-container .field-Title
+{
+	width: 91px;
+}
+.ClassSchedule-container .field-Title2
+{
+	width: 70px;
+	margin-left: 30px;
+}
+.ClassSchedule-container .dropDownList
+{
+	width: 140px;
+}
+.ClassSchedule-container .dropDownList2
+{
+	width: 388px;
+}
+.ClassSchedule-container .div-margin
+{
+	margin: 10px 0;
+}
+.ClassSchedule-container .btn-size
+{
+	width: 140px;
+	margin-left: 30px;
+}
+.ClassSchedule-container .loadArea
+{
+	margin-top: 20px;
+	border: 1px solid #aaa;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.ClassSchedule-container .loadedArea
+{
+	border: 1px solid #aaa;
+	border-top: none;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.ClassSchedule-container table
+{
+	border: 1px solid #008080;
+	font-size: 11px;
+    margin-top: 0px;
+}
+.ClassSchedule-container .tableHead
+{
+	background-color: #008080;
+	color: #d9eaf7;
+	position: relative;
+}
+.ClassSchedule-container .tableBanner
+{
+	font-weight: bold;
+	font-size: 14px;
+	word-spacing: 2px;
+	margin: 20px 0px 10px 0px;
+	display: inline-block;
+}
+.ClassSchedule-container .action-container img
+{
+	padding: 1px;
+	height: auto;
+	width: 16px;
+}
+.ClassSchedule-container .updatePanel-Wrapper
+{
+	background: none repeat scroll 0 0 #d9ef95;
+	border: 1px solid #005782;
+	font-family: Arial, Helvetica, sans-serif;
+	/* font-size: 13px;
+    color: #5d5d5d;
+     
+    padding: 20px;
+    position: fixed;
+    top: 5%;
+    width: 700px;
+    z-index: 100;
+    box-shadow: 0 0 15px 10px #808080;
+    border-radius: 20px;*/
+}
+.ClassSchedule-container .combo-width
+{
+	margin: 2px;
+	width: 200px;
+	height: 22px;
+}
+.ClassSchedule-container .field-width
+{
+	margin: 2px;
+	width: 196px;
+}
+.ClassSchedule-container .label-width
+{
+    width: 110px;
+	display: inline-block;
+	text-align: left;
+}
+
+.ClassSchedule-container .label-width-popupbox
+{
+    width: 100px;
+	display: inline-block;
+	text-align: left;
+}
+/*End ClassSchedule-container End*/
+
+/*Start ConflictCheck-container Start*/
+/*ConflickCheck*/
+.ConflictCheck-container .field-Title{
+    width: 55px;
+}
+.ConflictCheck-container .field-Title1 {
+    width: 55px;
+    margin-left: 5px;
+}
+.ConflictCheck-container .input-Size {
+    width: 120px;
+}
+.ConflictCheck-container .dropDownList {
+    width: 153px;
+}
+.ConflictCheck-container .dropDownList1 {
+    width: 250px;
+}
+.ConflictCheck-container .div-margin {
+    margin: 10px 0;
+}
+.ConflictCheck-container .btn-size {
+    width: 100px;
+    margin-left: 5px;
+}
+.ConflictCheck-container .btn-size2 {
+    width: 100px;
+    margin-left: 10px;
+}
+.ConflictCheck-container .loadArea {
+    margin-top: 20px;
+    border: 1px solid #aaa;
+    background-color: #f9f9f9;
+    padding: 5px;
+}
+.ConflictCheck-container .loadedArea {
+    border: 1px solid #aaa;
+    border-top: none;
+    background-color: #f9f9f9;
+    padding: 5px;
+}
+.ConflictCheck-container .checkPanel {
+    width: 300px;
+}
+.ConflictCheck-container .studentIdPanel {
+    width: 170px;
+}
+.ConflictCheck-container .coursePanel {
+    width: 170px;
+}
+/*End ConflickCheck-container End*/
+
+/*End=========================Scheduler=========================End*/
+
+
+/*Start=========================Student=========================Start*/
+
+/*Start preMandatoryCourse-container Start*/
+/*PreCourseAssign.aspx*/
+.preMandatoryCourse-container .field-Title
+{
+	width: 110px;
+}
+.preMandatoryCourse-container .field-Title2
+{
+	width: 75px;
+	margin-left: 5px;
+}
+.preMandatoryCourse-container .field-Title3
+{
+	width: 350px;
+	margin-left: 5px;
+	color: #f00;
+	font-weight: bold;
+}
+.preMandatoryCourse-container .input-Size
+{
+	width: 40px;
+}
+.preMandatoryCourse-container .dropDownList
+{
+	width: 230px;
+}
+.preMandatoryCourse-container .div-margin
+{
+	margin: 10px 0;
+}
+.preMandatoryCourse-container .btn-size
+{
+	width: 230px;
+}
+.preMandatoryCourse-container .loadArea
+{
+	margin-top: 20px;
+	border: 1px solid #aaa;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.preMandatoryCourse-container .loadedArea
+{
+	border: 1px solid #aaa;
+	border-top: none;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.preMandatoryCourse-container table, .preMandatoryCourse-container tr, .preMandatoryCourse-container th
+{
+	border: 1px solid #008080;
+}
+.preMandatoryCourse-container .tableHead
+{
+	background-color: #008080;
+	color: #d9eaf7;
+	position: relative;
+}
+/*End preMandatoryCourse-container End*/
+
+/*Start studentProbationList-container Start*/
+/*RptProbationStudentList*/
+
+.studentProbationList-container .field-Title
+{
+	width: 157px;
+}
+.studentProbationList-container .field-Title2
+{
+	width: 80px;
+	margin-left: 5px;
+}
+.studentProbationList-container .field-Title4 img
+{
+	width: 13px;
+	height: auto;
+}
+.studentProbationList-container .field-Title3
+{
+	width: 25px;
+	margin-left: 5px;
+}
+.studentProbationList-container .field-Title4
+{
+	width: 260px;
+}
+.studentProbationList-container .input-Size
+{
+	width: 40px;
+}
+.studentProbationList-container .dropDownList
+{
+	width: 150px;
+}
+.studentProbationList-container .div-margin
+{
+	margin: 10px 0;
+}
+.studentProbationList-container .btn-size
+{
+	width: 150px;
+}
+.studentProbationList-container .loadArea
+{
+	margin-top: 10px;
+	border-top: 1px solid #ffd800;
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.studentProbationList-container .loadedArea
+{
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.studentProbationList-container .StudentList-container table,
+.studentProbationList-container .StudentList-container tr,
+.studentProbationList-container .StudentList-container th
+{
+	border: none;
+}
+
+/*End studentProbationList-container End*/
+
+/*Start StudentCourseHistory-container Start*/
+.StudentCourseHistory-container .field-Title{
+    width: 100px;
+}
+.StudentCourseHistory-container .field-Title-Fix {
+    width: 220px;
+    margin-right: 15px;
+    font-weight: bold;
+}
+.StudentCourseHistory-container .SearchKey {
+    margin-left: -6px;
+    padding: 2px 10px;
+}
+.StudentCourseHistory-container .input-Size {
+    width: 120px;
+}
+.StudentCourseHistory-container .dropDownList {
+    width: 123px;
+}
+.StudentCourseHistory-container .div-margin {
+    margin: 10px 0;
+}
+.StudentCourseHistory-container .btn-size {
+    width: 140px;
+}
+.StudentCourseHistory-container .loadArea
+{
+	margin-top: 10px;
+	border-top: 1px solid #ffd800;
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.StudentCourseHistory-container .loadedArea
+{
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.StudentCourseHistory-container table, .StudentCourseHistory-container tr, .StudentCourseHistory-container th {
+    /*border: 1px solid #008080;*/
+}
+.StudentCourseHistory-container .tableHead {
+    background-color: #008080;
+    color: #d9eaf7;
+    position: relative;
+}
+.StudentCourseHistory-container .tableBanner {
+    font-weight: bold;
+    margin: 15px 0 1px 0;
+}
+/*End StudentCourseHistory-container End*/
+
+/*Start StudentCourseWaiver-container Start*/
+/*StudentCourseWaiver.aspx*/
+.StudentCourseWaiver-container .div-margin
+{
+	margin: 10px 0;
+}
+.StudentCourseWaiver-container .loadArea
+{
+	margin-top: 10px;
+	border-top: 1px solid #ffd800;
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.StudentCourseWaiver-container .loadedArea
+{
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.StudentCourseWaiver-container .field-Title
+{
+	padding-right: 5px;
+    width: 60px;
+}
+.StudentCourseWaiver-container .field-Title1
+{
+	padding: 0px 5px;
+    width: 60px;
+}
+.StudentCourseWaiver-container .field-Title2
+{
+	padding: 0px 5px;
+}
+.StudentCourseWaiver-container .input-Size
+{
+	width: 120px;
+	text-align: center;
+}
+.StudentCourseWaiver-container .input-Size1
+{
+	width: 100px;
+	text-align: center;
+}
+.StudentCourseWaiver-container .input-Size2
+{
+	width: 30px;
+	text-align: center;
+}
+.StudentCourseWaiver-container .input-Size3
+{
+	width: 274px;
+	text-align: center;
+}
+.StudentCourseWaiver-container .dropDownList
+{
+	width: 300px;
+    height: 21px;
+}
+.StudentCourseWaiver-container .dropDownList1
+{
+	width: 426px;
+    height: 21px;
+}
+.StudentCourseWaiver-container .dropDownList2
+{
+	width: 70px;
+    height: 21px;
+}
+.StudentCourseWaiver-container .dropDownList3
+{
+	width: 150px;
+    height: 21px;
+}
+.StudentCourseWaiver-container .dropDownList4
+{
+	width: 80px;
+    height: 21px;
+}
+/*End StudentCourseWaiver-container End*/
+
+/*End=========================Student=========================End*/
+
+
+/*Start=========================Registration=========================Start*/
+
+/*Start DateTimeSetUp-container Start*/
+/*DateTimeSetUp.aspx*/
+.DateTimeSetUp-container .div-margin
+{
+	margin: 10px 0;
+}
+.DateTimeSetUp-container .loadArea
+{
+	margin-top: 10px;
+	border-top: 1px solid #ffd800;
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.DateTimeSetUp-container .loadedArea
+{
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.DateTimeSetUp-container .field-Title
+{
+	padding-right: 5px;
+}
+.DateTimeSetUp-container .field-Title1
+{
+	padding: 0px 5px;
+}
+.DateTimeSetUp-container .dropDownList
+{
+	width: 150px;
+}
+.DateTimeSetUp-container .input-Size
+{
+	width: 80px;
+	text-align: center;
+}
+.DateTimeSetUp-container .input-Size1
+{
+	width: 60px;
+	text-align: center;
+}
+.DateTimeSetUp-container .btn-size
+{
+	width: 100px;
+}
+.DateTimeSetUp-container table, .DateTimeSetUp-container tr, .DateTimeSetUp-container th {
+    /*border: 1px solid #008080;*/
+}
+.DateTimeSetUp-container .tableHead {
+    background-color: #008080;
+    color: #d9eaf7;
+    position: relative;
+}
+/*End DateTimeSetUp-container End*/
+
+/*End=========================Registration=========================End*/
+
+
+/*Start=========================Result=========================Start*/
+
+/*Start GradeSheet-container Start*/
+/*GradeSheet.aspx*/
+
+.GradeSheet-container label,
+.GradeSheet-container select,
+.GradeSheet-container input
+{
+	/*font-size: 11px;*/
+}
+.GradeSheet-container .div-margin
+{
+	margin: 5px 0;
+}
+.GradeSheet-container .loadArea
+{
+	margin-top: 10px;
+	border-top: 1px solid #ffd800;
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.GradeSheet-container .loadedArea
+{
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.GradeSheet-container .field-Title
+{
+	width: 50px;
+}
+.GradeSheet-container .field-Title1
+{
+	width: 45px;
+	margin-left: 10px;
+}
+.GradeSheet-container .dropDownList
+{
+	padding: 0px 5px;
+}
+.GradeSheet-container .dropDownList1
+{
+	width: 338px;
+}
+.GradeSheet-container .input-Size
+{
+	width: 150px;
+}
+.GradeSheet-container .btn-size
+{
+	padding: 0px 10px;
+}
+
+/*End GradeSheet-container End*/
+
+
+/*Start GradeSheetDownload-container Start*/
+/*GradeSheetDownload.aspx*/
+.GradeSheetDownload-Wrapper-Mainbody
+{
+	margin-bottom: 220px;
+}
+.GradeSheetDownload-container label,
+.GradeSheetDownload-container select,
+.GradeSheetDownload-container input
+{
+	/*font-size: 11px;*/
+}
+.GradeSheetDownload-container .div-margin
+{
+	margin: 5px 0;
+}
+.GradeSheetDownload-container .loadArea
+{
+	margin-top: 10px;
+	border-top: 1px solid #ffd800;
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.GradeSheetDownload-container .field-Title
+{
+	padding-right: 5px;
+}
+.GradeSheetDownload-container .field-Title1
+{
+	width: 51px;
+}
+.GradeSheetDownload-container .dropDownList
+{
+	padding: 0px 5px;
+}
+.GradeSheetDownload-container .dropDownList1
+{
+	width: 250px;
+}
+.GradeSheetDownload-container .input-Size
+{
+	width: 150px;
+}
+.GradeSheetDownload-container .btn-size
+{
+	padding: 0px 10px;
+}
+.GradeSheetDownload-container .loadedArea
+{
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+/*End GradeSheetDownload-container End*/
+
+
+/*Start GradeSheetUploadSubmit-container Start*/
+/*GradeSheetUploadSubmit.aspx*/
+
+.GradeSheetUploadSubmit-Wrapper-Mainbody
+{
+	margin-bottom: 220px;
+}
+.GradeSheetUploadSubmit-container label,
+.GradeSheetUploadSubmit-container select,
+.GradeSheetUploadSubmit-container input
+{
+	/*font-size: 11px;*/
+}
+.GradeSheetUploadSubmit-container .div-margin
+{
+	margin: 5px 0;
+}
+.GradeSheetUploadSubmit-container .loadArea
+{
+	margin-top: 10px;
+	border-top: 1px solid #ffd800;
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.GradeSheetUploadSubmit-container .field-Title
+{
+	padding-right: 5px;
+}
+.GradeSheetDownload-container .field-Title1
+{
+	width: 51px;
+}
+.GradeSheetUploadSubmit-container .dropDownList
+{
+	padding: 0px 5px;
+}
+.GradeSheetUploadSubmit-container .dropDownList1
+{
+	width: 250px;
+}
+.GradeSheetUploadSubmit-container .input-Size
+{
+	width: 150px;
+}
+.GradeSheetUploadSubmit-container .btn-size
+{
+	padding: 0px 10px;
+}
+.GradeSheetUploadSubmit-container .loadedArea
+{
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.GradeSheetUploadSubmit-container table, 
+.GradeSheetUploadSubmit-container tr, 
+.GradeSheetUploadSubmit-container #ctl00_MainContainer_gvGradeSheet
+{
+	min-width: 800px;
+	max-width: 900px;
+}
+
+/*End GradeSheetDownload-container End*/
+
+/*Start GradeSheetCheck-container Start*/
+/*GradeSheetCheck.aspx*/
+
+.GradeSheetCheck-Wrapper-Mainbody
+{
+	margin-bottom: 220px;
+}
+.GradeSheetCheck-container label,
+.GradeSheetCheck-container select,
+.GradeSheetCheck-container input
+{
+	/*font-size: 11px;*/
+}
+.GradeSheetCheck-container .div-margin
+{
+	margin: 5px 0;
+}
+.GradeSheetCheck-container .loadArea
+{
+	margin-top: 10px;
+	border-top: 1px solid #ffd800;
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.GradeSheetCheck-container .field-Title
+{
+	padding-right: 5px;
+}
+.GradeSheetCheck-container .field-Title1
+{
+	width: 51px;
+}
+.GradeSheetCheck-container .dropDownList
+{
+	padding: 0px 5px;
+}
+.GradeSheetCheck-container .dropDownList1
+{
+	width: 250px;
+}
+.GradeSheetCheck-container .input-Size
+{
+	width: 150px;
+}
+.GradeSheetCheck-container .btn-size
+{
+	padding: 0px 10px;
+}
+.GradeSheetCheck-container .loadedArea
+{
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.GradeSheetCheck-container table, 
+.GradeSheetCheck-container tr, 
+.GradeSheetCheck-container #ctl00_MainContainer_gvGradeSheet
+{
+	min-width: 800px;
+	max-width: 900px;
+}
+
+/*End GradeSheetDownload-container End*/
+
+
+/*Start ManualGradeChange-container Start*/
+/*ManualGradeChange.aspx*/
+.ManualGradeChange-container label,
+.ManualGradeChange-container select,
+.ManualGradeChange-container input
+{
+	/*font-size: 11px;*/
+}
+.ManualGradeChange-container .div-margin
+{
+	margin: 5px 0;
+}
+.ManualGradeChange-container .information-Zone
+{
+	width: 400px;
+	float: left;
+	margin-right: 10px;
+}
+.ManualGradeChange-container .loadArea
+{
+	margin-top: 10px;
+	border-top: 1px solid #ffd800;
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.ManualGradeChange-container .loadedArea
+{
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.ManualGradeChange-container .field-Title
+{
+	padding-right: 5px;
+}
+.ManualGradeChange-container .field-Title1
+{
+	margin-left: 20px;
+}
+.ManualGradeChange-container .field-Title2
+{
+	margin-left: 10px;
+}
+.ManualGradeChange-container .field-Title3
+{
+	width: 61px;
+	padding-right: 5px;
+	margin-left: 10px;
+}
+.ManualGradeChange-container .field-Title4
+{
+	padding: 0px 5px 0px 10px;
+}
+.ManualGradeChange-container .field-Title5
+{
+	padding-right: 5px;
+}
+.ManualGradeChange-container .field-Title6
+{
+	padding-right: 5px;
+}
+.ManualGradeChange-container .field-Title7
+{
+	padding: 0px 5px;
+}
+.ManualGradeChange-container .dropDownList
+{
+	padding: 0px 5px;
+	width: 70px;
+}
+.ManualGradeChange-container .dropDownList1
+{
+	padding: 0px 5px;
+}
+.ManualGradeChange-container .dropDownList2
+{
+	width: 250px;
+}
+.ManualGradeChange-container .field-Title-Fix
+{
+	padding-right: 5px;
+	font-weight: bold;
+	text-align: left;
+	/*font-size: 11px;*/
+}
+.ManualGradeChange-container .btn-size
+{
+	padding: 0px 10px;
+}
+.ManualGradeChange-container .input-Size
+{
+	width: 130px;
+	letter-spacing: 5px;
+	font-weight: bold;
+	padding: 0px 5px;
+}
+.ManualGradeChange-container .input-Size1
+{
+	width: 130px;
+	padding: 0px 5px;
+}
+.ManualGradeChange-container .tableBanner
+{
+	font-weight: bold;
+	font-size: 14px;
+	word-spacing: 2px;
+	margin: 10px 0px 0px 0px;
+	display: inline-block;
+}
+.ManualGradeChange-container table,
+.ManualGradeChange-container tr,
+.ManualGradeChange-container th
+{
+	border: 1px solid #008080;
+	/*font-size: 11px;*/
+}
+.ManualGradeChange-container .tableHead
+{
+	background-color: #008080;
+	color: #d9eaf7;
+	position: relative;
+}
+/*End ManualGradeChange-container End*/
+
+/*Start GradeSheetTransfer-container Start*/
+/*GradeSheetTransfer.aspx*/
+
+.GradeSheetTransfer-container label,
+.GradeSheetTransfer-container select,
+.GradeSheetTransfer-container input
+{
+	/*font-size: 11px;*/
+}
+.GradeSheetTransfer-container table,
+.GradeSheetTransfer-container tr,
+.GradeSheetTransfer-container th
+{
+    /*font-size: 11px;*/
+}
+.GradeSheetTransfer-container .div-margin
+{
+	margin: 5px 0;
+}
+.GradeSheetTransfer-container .loadArea
+{
+	margin-top: 10px;
+	border-top: 1px solid #ffd800;
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.GradeSheetTransfer-container .loadedArea
+{
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.GradeSheetTransfer-container .field-Title
+{
+	padding-right: 5px;
+}
+.GradeSheetTransfer-container .field-Title1
+{
+	padding: 0px 5px;
+}
+.GradeSheetTransfer-container .dropDownList
+{
+	padding: 0px 5px;
+}
+.GradeSheetTransfer-container .dropDownList1
+{
+	width: 250px;
+}
+.GradeSheetTransfer-container .btn-size
+{
+	padding: 0px 10px;
+}
+.GradeSheetTransfer-container .input-Size
+{
+	width: 136px;
+	letter-spacing: 5px;
+	text-align: center;
+	font-weight: bold;
+}
+
+/*End gradeSheetTransfer-container End*/
+
+
+/*Start GradeViewAndChange-container Start*/
+/*GradeViewAndChange.aspx*/
+
+.GradeViewAndChange-container label,
+.GradeViewAndChange-container select,
+.GradeViewAndChange-container input
+{
+	/*font-size: 11px;*/
+}
+.GradeViewAndChange-container table,
+.GradeViewAndChange-container tr,
+.GradeViewAndChange-container th
+{
+    /*font-size: 11px;*/
+}
+.GradeViewAndChange-container .div-margin
+{
+	margin: 5px 0;
+}
+.GradeViewAndChange-container .loadArea
+{
+	margin-top: 10px;
+	border-top: 1px solid #ffd800;
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.GradeViewAndChange-container .loadedArea
+{
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.GradeViewAndChange-container .field-Title
+{
+	padding-right: 5px;
+}
+.GradeViewAndChange-container .field-Title1
+{
+	padding: 0px 5px;
+}
+.GradeViewAndChange-container .dropDownList
+{
+	padding: 0px 5px;
+}
+.GradeViewAndChange-container .dropDownList1
+{
+	width: 250px;
+}
+.GradeViewAndChange-container .btn-size
+{
+	padding: 0px 10px;
+    height: 18px;
+}
+.GradeViewAndChange-container .btn-size1
+{
+	padding: 0px 30px;
+    height: 18px;
+}
+.GradeViewAndChange-container .input-Size
+{
+	width: 136px;
+	letter-spacing: 5px;
+	text-align: center;
+	font-weight: bold;
+}
+
+/*End GradeViewAndChange-container End*/
+
+
+/*Start ResultProcess-container Start*/
+/*ResultProcess.aspx*/
+.ResultProcess-container label,
+.ResultProcess-container select,
+.ResultProcess-container input
+{
+	/*font-size: 11px;*/
+}
+.ResultProcess-container .div-margin
+{
+	margin: 5px 0;
+}
+.ResultProcess-container .loadArea
+{
+	margin-top: 10px;
+	border-top: 1px solid #ffd800;
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.ResultProcess-container .loadedArea
+{
+	border-bottom: 1px solid #ffd800;
+	background-color: #f9f9f9;
+	padding: 5px;
+}
+.ResultProcess-container .field-Title
+{
+	width: 60px;
+	padding-right: 5px;
+}
+.ResultProcess-container .field-Title1
+{
+	width: 60px;
+	padding: 0px 5px;
+}
+.ResultProcess-container .dropDownList
+{
+	padding: 0px 5px;
+	width: 140px;
+}
+.ResultProcess-container .dropDownList1
+{
+	padding: 0px 5px;
+	width: 60px;
+}
+.ResultProcess-container .btn-size
+{
+	padding: 0px 10px;
+}
+.ResultProcess-container .input-Size
+{
+	width: 136px;
+	letter-spacing: 5px;
+	text-align: center;
+	font-weight: bold;
+}
+.ResultProcess-container .tableBanner
+{
+	font-weight: bold;
+	font-size: 14px;
+	word-spacing: 2px;
+	margin: 10px 0px 10px 0px;
+	display: inline-block;
+}
+.ResultProcess-container table, .ResultProcess-container tr, .ResultProcess-container th
+{
+	border: 1px solid #008080;
+}
+.ResultProcess-container .tableHead
+{
+	background-color: #008080;
+	color: #d9eaf7;
+	position: relative;
+}
+/*End ResultProcess-container End*/
+
+
+
+/*Start CourseSyllabusForm-container Start*/
+/*CourseSyllabusForm.aspx*/
+.CourseSyllabusForm-container {
+    margin-top: 10px;
+}
+
+.CourseSyllabusForm-container .CourseSyllabusForm-Collapsible {
+    margin-bottom: 5px;
+}
+.CourseSyllabusForm-container .CourseSyllabusForm-Collapsible .qualification > div span {
+    display: inline-block;
+    width: 110px;
+    vertical-align: top;
+}
+.CourseSyllabusForm-container .CourseSyllabusForm-Collapsible .qualification .bigPan {
+    margin-bottom: 5px;
+}
+.CourseSyllabusForm-container .CourseSyllabusForm-Collapsible .qualification .smallPan {
+    width: 35%;
+    display: inline-block;
+}
+.CourseSyllabusForm-container .CourseSyllabusForm-Collapsible .qualification > div .inputFieldBig {
+    width: 50%;
+}
+.CourseSyllabusForm-container .CourseSyllabusForm-Collapsible .qualification > div .inputFieldBigTextArea {
+    width: 500px;
+}
+.CourseSyllabusForm-container .CourseSyllabusForm-Collapsible .qualification > div {
+    margin-bottom: 10px;
+}
+.CourseSyllabusForm-container .CourseSyllabusForm-Collapsible .qualification > div > div {
+    margin-bottom: 5px;
+}
+.CourseSyllabusForm-container .CourseSyllabusForm-Collapsible .qualification .ApplyButton {
+    text-align: center;
+    margin-bottom: 0px;
+}
+.CourseSyllabusForm-container .CourseSyllabusForm-Collapsible .qualification .ApplyButton .btnSubmit {
+    color: #fff;
+    background-color: #5cb85c;
+    border-color: #4cae4c;
+    display: inline-block;
+    padding: 6px 12px;
+    margin-bottom: 0;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.42857143;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+.CourseSyllabusForm-container .CourseSyllabusForm-Collapsible .qualification .ApplyButton .btnSubmit:hover {
+    color: black;
+}
+.CourseSyllabusForm-container .CourseSyllabusForm-Collapsible .collapsePanel {
+    width: 97%;
+    height:0px;            
+    padding: 10px;
+    border-radius: 0 0 5px 5px;            
+}
+.CourseSyllabusForm-container .CourseSyllabusForm-Collapsible .collapsePanelHeader{   
+    width:97%;            
+    height:20px;
+    background-color: none;
+    font-weight:bold;
+    padding:5px; 
+    cursor: pointer; 
+    vertical-align: middle;
+    padding: 10px;
+    border-radius: 5px 5px 0 0;
+    color: white;
+}
+.CourseSyllabusForm-container .CourseSyllabusForm-Collapsible .qualification .inputFieldDayTime {
+    width: 150px;
+}
+/*End CourseSyllabusForm-container End*/
+/*End=========================Result=========================End*/

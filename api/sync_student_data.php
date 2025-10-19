@@ -183,7 +183,9 @@ try {
             $advisor_email = sanitize($data['advisor_email'] ?? '');
             $advisor_phone = sanitize($data['advisor_phone'] ?? '');
             $advisor_room = sanitize($data['advisor_room'] ?? '');
-            $default_password = password_hash($advisor_initial, PASSWORD_BCRYPT);
+            // $default_password = password_hash($advisor_initial, PASSWORD_BCRYPT);
+            // use 123 as the default password for advisors and teachers
+            $default_password = password_hash('123', PASSWORD_DEFAULT);
             
             $stmt = $conn->prepare("
                 INSERT INTO teachers (username, password_hash, full_name, initial, email, phone, room_number, department_id)
@@ -217,9 +219,26 @@ try {
         }
     }
     
-    // 4. Get current trimester
-    $stmt = $conn->query("SELECT trimester_id FROM trimesters WHERE is_current = TRUE LIMIT 1");
-    $current_trimester_id = $stmt->fetch_assoc()['trimester_id'] ?? 2; // Default to Fall 2025
+    // 4. Get current trimester from synced data or database
+    $current_trimester_id = null;
+    
+    // Try to use the trimester code from the synced data
+    if (!empty($data['current_trimester_code'])) {
+        $trimester_code = sanitize($data['current_trimester_code']);
+        $stmt = $conn->prepare("SELECT trimester_id FROM trimesters WHERE trimester_code = ? LIMIT 1");
+        $stmt->bind_param("s", $trimester_code);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) {
+            $current_trimester_id = $result->fetch_assoc()['trimester_id'];
+        }
+    }
+    
+    // Fallback: Get from database is_current flag
+    if (!$current_trimester_id) {
+        $stmt = $conn->query("SELECT trimester_id FROM trimesters WHERE is_current = TRUE LIMIT 1");
+        $current_trimester_id = $stmt->fetch_assoc()['trimester_id'] ?? 2;
+    }
     
     // 4.5. Delete existing class routine entries for this student and current trimester to prevent duplicates
     $stmt = $conn->prepare("
@@ -360,6 +379,8 @@ try {
             'student_operation' => $operation,
             'student_id' => $student_id,
             'password_synced' => $password_updated,
+            'current_trimester' => $data['current_trimester'] ?? 'Unknown',
+            'trimester_id_used' => $current_trimester_id,
             'courses_synced' => $courses_synced,
             'attendance_synced' => $attendance_synced
         ]

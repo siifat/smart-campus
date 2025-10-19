@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 16, 2025 at 08:04 PM
+-- Generation Time: Oct 19, 2025 at 04:00 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -35,6 +35,63 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_archive_old_logs` (IN `days_old`
     
     SELECT deleted_count as archived_logs, 
            CONCAT('Archived logs older than ', days_old, ' days') as message;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_calculate_assignment_analytics` (IN `p_assignment_id` INT)   BEGIN
+    DECLARE total_enrolled INT;
+    DECLARE total_subs INT;
+    DECLARE on_time INT;
+    DECLARE late_subs INT;
+    DECLARE avg_score DECIMAL(5,2);
+    DECLARE med_score DECIMAL(5,2);
+    DECLARE max_score DECIMAL(5,2);
+    DECLARE min_score DECIMAL(5,2);
+    
+    -- Get total enrolled students
+    SELECT COUNT(DISTINCT e.student_id) INTO total_enrolled
+    FROM enrollments e
+    JOIN assignments a ON e.course_id = a.course_id 
+        AND e.trimester_id = a.trimester_id
+        AND (a.section IS NULL OR e.section = a.section)
+    WHERE a.assignment_id = p_assignment_id
+      AND e.status = 'enrolled';
+    
+    -- Get submission stats
+    SELECT 
+        COUNT(*),
+        SUM(CASE WHEN is_late = 0 THEN 1 ELSE 0 END),
+        SUM(CASE WHEN is_late = 1 THEN 1 ELSE 0 END)
+    INTO total_subs, on_time, late_subs
+    FROM assignment_submissions
+    WHERE assignment_id = p_assignment_id;
+    
+    -- Get grade statistics
+    SELECT 
+        AVG(marks_obtained),
+        MAX(marks_obtained),
+        MIN(marks_obtained)
+    INTO avg_score, max_score, min_score
+    FROM submission_grades sg
+    JOIN assignment_submissions sub ON sg.submission_id = sub.submission_id
+    WHERE sub.assignment_id = p_assignment_id;
+    
+    -- Insert or update analytics
+    INSERT INTO assignment_analytics (
+        assignment_id, total_submissions, on_time_submissions, 
+        late_submissions, missing_submissions, average_score, 
+        highest_score, lowest_score
+    ) VALUES (
+        p_assignment_id, total_subs, on_time, late_subs,
+        total_enrolled - total_subs, avg_score, max_score, min_score
+    ) ON DUPLICATE KEY UPDATE
+        total_submissions = VALUES(total_submissions),
+        on_time_submissions = VALUES(on_time_submissions),
+        late_submissions = VALUES(late_submissions),
+        missing_submissions = VALUES(missing_submissions),
+        average_score = VALUES(average_score),
+        highest_score = VALUES(highest_score),
+        lowest_score = VALUES(lowest_score),
+        last_calculated = CURRENT_TIMESTAMP;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_cleanup_expired_sessions` ()   BEGIN
@@ -93,6 +150,65 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_analytics_data` (IN `p_date_
     LEFT JOIN teachers t ON d.department_id = t.department_id
     LEFT JOIN courses c ON d.department_id = c.department_id
     GROUP BY d.department_id, d.department_name;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_class_performance` (IN `p_course_id` INT, IN `p_section` VARCHAR(10), IN `p_trimester_id` INT)   BEGIN
+    -- Get overall performance
+    SELECT 
+        COUNT(DISTINCT e.student_id) as total_students,
+        AVG(g.trimester_gpa) as average_gpa,
+        COUNT(DISTINCT CASE WHEN g.trimester_gpa >= 3.5 THEN e.student_id END) as excelling,
+        COUNT(DISTINCT CASE WHEN g.trimester_gpa < 2.5 THEN e.student_id END) as struggling,
+        AVG(a.present_count / a.total_classes * 100) as attendance_rate
+    FROM enrollments e
+    LEFT JOIN grades g ON e.enrollment_id = g.enrollment_id
+    LEFT JOIN attendance a ON e.enrollment_id = a.enrollment_id
+    WHERE e.course_id = p_course_id
+      AND e.section = p_section
+      AND e.trimester_id = p_trimester_id
+      AND e.status = 'enrolled';
+      
+    -- Get top 5 students
+    SELECT 
+        s.student_id,
+        s.full_name,
+        g.trimester_gpa,
+        g.total_marks
+    FROM enrollments e
+    JOIN students s ON e.student_id = s.student_id
+    LEFT JOIN grades g ON e.enrollment_id = g.enrollment_id
+    WHERE e.course_id = p_course_id
+      AND e.section = p_section
+      AND e.trimester_id = p_trimester_id
+      AND e.status = 'enrolled'
+    ORDER BY g.trimester_gpa DESC, g.total_marks DESC
+    LIMIT 5;
+    
+    -- Get bottom 5 students (struggling)
+    SELECT 
+        s.student_id,
+        s.full_name,
+        g.trimester_gpa,
+        g.total_marks,
+        COUNT(DISTINCT CASE 
+            WHEN sub.submission_id IS NULL AND a.due_date < NOW() 
+            THEN a.assignment_id 
+        END) as missing_assignments
+    FROM enrollments e
+    JOIN students s ON e.student_id = s.student_id
+    LEFT JOIN grades g ON e.enrollment_id = g.enrollment_id
+    LEFT JOIN assignments a ON e.course_id = a.course_id 
+        AND e.trimester_id = a.trimester_id
+        AND (a.section IS NULL OR e.section = a.section)
+    LEFT JOIN assignment_submissions sub ON a.assignment_id = sub.assignment_id 
+        AND e.student_id = sub.student_id
+    WHERE e.course_id = p_course_id
+      AND e.section = p_section
+      AND e.trimester_id = p_trimester_id
+      AND e.status = 'enrolled'
+    GROUP BY s.student_id, s.full_name, g.trimester_gpa, g.total_marks
+    ORDER BY g.trimester_gpa ASC, g.total_marks ASC, missing_assignments DESC
+    LIMIT 5;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_student_dashboard` (IN `p_student_id` VARCHAR(10))   BEGIN
@@ -157,6 +273,40 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_system_health` ()   BEGIN
         (SELECT COUNT(*) FROM admin_sessions WHERE is_active = 1) as active_sessions
     FROM information_schema.TABLES 
     WHERE table_schema = 'uiu_smart_campus';
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_get_teacher_dashboard_stats` (IN `p_teacher_id` INT, IN `p_trimester_id` INT)   BEGIN
+    -- Total courses teaching
+    SELECT COUNT(DISTINCT course_id) as total_courses
+    FROM enrollments
+    WHERE teacher_id = p_teacher_id 
+      AND trimester_id = p_trimester_id
+      AND status = 'enrolled';
+    
+    -- Total students
+    SELECT COUNT(DISTINCT student_id) as total_students
+    FROM enrollments
+    WHERE teacher_id = p_teacher_id 
+      AND trimester_id = p_trimester_id
+      AND status = 'enrolled';
+    
+    -- Pending submissions to grade
+    SELECT COUNT(*) as pending_grades
+    FROM assignment_submissions sub
+    JOIN assignments a ON sub.assignment_id = a.assignment_id
+    LEFT JOIN submission_grades g ON sub.submission_id = g.submission_id
+    WHERE a.teacher_id = p_teacher_id
+      AND a.trimester_id = p_trimester_id
+      AND sub.status = 'submitted'
+      AND g.grade_id IS NULL;
+    
+    -- Upcoming deadlines (next 7 days)
+    SELECT COUNT(*) as upcoming_deadlines
+    FROM assignments
+    WHERE teacher_id = p_teacher_id
+      AND trimester_id = p_trimester_id
+      AND due_date BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 7 DAY)
+      AND is_published = 1;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_moderate_note` (IN `p_note_id` INT, IN `p_action` ENUM('approve','reject'), IN `p_admin_id` INT)   BEGIN
@@ -314,6 +464,137 @@ INSERT INTO `admin_users` (`admin_id`, `username`, `password_hash`, `full_name`,
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `announcement_reads`
+--
+
+CREATE TABLE `announcement_reads` (
+  `read_id` int(11) NOT NULL,
+  `announcement_id` int(11) NOT NULL,
+  `student_id` varchar(10) NOT NULL,
+  `read_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `assignments`
+--
+
+CREATE TABLE `assignments` (
+  `assignment_id` int(11) NOT NULL,
+  `course_id` int(11) NOT NULL,
+  `teacher_id` int(11) NOT NULL,
+  `trimester_id` int(11) NOT NULL,
+  `section` varchar(10) DEFAULT NULL COMMENT 'NULL = all sections',
+  `title` varchar(200) NOT NULL,
+  `description` text NOT NULL,
+  `assignment_type` enum('homework','project','quiz','lab','bonus','midterm','final') NOT NULL,
+  `total_marks` decimal(5,2) NOT NULL DEFAULT 100.00,
+  `weight_percentage` decimal(5,2) DEFAULT NULL COMMENT 'Weight in final grade (optional)',
+  `file_path` varchar(255) DEFAULT NULL COMMENT 'Attached assignment file',
+  `due_date` datetime NOT NULL,
+  `late_submission_allowed` tinyint(1) DEFAULT 1,
+  `late_penalty_per_day` decimal(5,2) DEFAULT 5.00 COMMENT 'Percentage penalty per day',
+  `is_published` tinyint(1) DEFAULT 0,
+  `is_bonus` tinyint(1) DEFAULT 0 COMMENT 'Bonus assignment flag',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `assignment_analytics`
+--
+
+CREATE TABLE `assignment_analytics` (
+  `analytics_id` int(11) NOT NULL,
+  `assignment_id` int(11) NOT NULL,
+  `total_submissions` int(11) DEFAULT 0,
+  `on_time_submissions` int(11) DEFAULT 0,
+  `late_submissions` int(11) DEFAULT 0,
+  `missing_submissions` int(11) DEFAULT 0,
+  `average_score` decimal(5,2) DEFAULT NULL,
+  `median_score` decimal(5,2) DEFAULT NULL,
+  `highest_score` decimal(5,2) DEFAULT NULL,
+  `lowest_score` decimal(5,2) DEFAULT NULL,
+  `standard_deviation` decimal(5,2) DEFAULT NULL,
+  `grade_distribution` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT '{"A": 10, "B": 15, ...}' CHECK (json_valid(`grade_distribution`)),
+  `last_calculated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `assignment_submissions`
+--
+
+CREATE TABLE `assignment_submissions` (
+  `submission_id` int(11) NOT NULL,
+  `assignment_id` int(11) NOT NULL,
+  `student_id` varchar(10) NOT NULL,
+  `enrollment_id` int(11) NOT NULL,
+  `file_path` varchar(255) DEFAULT NULL,
+  `file_size` bigint(20) DEFAULT NULL,
+  `file_type` varchar(50) DEFAULT NULL,
+  `submission_text` text DEFAULT NULL COMMENT 'For text-based submissions',
+  `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `is_late` tinyint(1) DEFAULT 0,
+  `late_days` int(11) DEFAULT 0,
+  `status` enum('submitted','graded','returned','resubmitted') DEFAULT 'submitted',
+  `attempt_number` int(11) DEFAULT 1,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Triggers `assignment_submissions`
+--
+DELIMITER $$
+CREATE TRIGGER `after_submission_insert` AFTER INSERT ON `assignment_submissions` FOR EACH ROW BEGIN
+    INSERT INTO `teacher_notifications` (teacher_id, notification_type, title, message, related_type, related_id, priority)
+    SELECT 
+        a.teacher_id,
+        IF(NEW.is_late = 1, 'late_submission', 'new_submission'),
+        IF(NEW.is_late = 1, 'Late Submission Received', 'New Submission Received'),
+        CONCAT(
+            'Student ', NEW.student_id, ' submitted "', a.title, '"',
+            IF(NEW.is_late = 1, CONCAT(' (', NEW.late_days, ' days late)'), ' on time')
+        ),
+        'submission',
+        NEW.submission_id,
+        IF(NEW.is_late = 1, 'high', 'normal')
+    FROM assignments a
+    WHERE a.assignment_id = NEW.assignment_id;
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `before_submission_insert` BEFORE INSERT ON `assignment_submissions` FOR EACH ROW BEGIN
+    DECLARE due_date DATETIME;
+    DECLARE is_late_allowed TINYINT(1);
+    
+    SELECT due_date, late_submission_allowed INTO due_date, is_late_allowed
+    FROM assignments WHERE assignment_id = NEW.assignment_id;
+    
+    IF NEW.submitted_at > due_date THEN
+        SET NEW.is_late = 1;
+        SET NEW.late_days = DATEDIFF(NEW.submitted_at, due_date);
+        
+        IF is_late_allowed = 0 THEN
+            SIGNAL SQLSTATE '45000' 
+            SET MESSAGE_TEXT = 'Late submission not allowed for this assignment';
+        END IF;
+    ELSE
+        SET NEW.is_late = 0;
+        SET NEW.late_days = 0;
+    END IF;
+END
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `attendance`
 --
 
@@ -364,6 +645,30 @@ CREATE TABLE `backup_history` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `class_performance_snapshots`
+--
+
+CREATE TABLE `class_performance_snapshots` (
+  `snapshot_id` int(11) NOT NULL,
+  `course_id` int(11) NOT NULL,
+  `section` varchar(10) NOT NULL,
+  `trimester_id` int(11) NOT NULL,
+  `teacher_id` int(11) NOT NULL,
+  `snapshot_date` date NOT NULL,
+  `average_grade` decimal(5,2) DEFAULT NULL,
+  `median_grade` decimal(5,2) DEFAULT NULL,
+  `total_students` int(11) NOT NULL,
+  `active_students` int(11) NOT NULL,
+  `struggling_students` int(11) DEFAULT 0 COMMENT 'Grade < 60%',
+  `excelling_students` int(11) DEFAULT 0 COMMENT 'Grade >= 80%',
+  `attendance_rate` decimal(5,2) DEFAULT NULL,
+  `submission_rate` decimal(5,2) DEFAULT NULL COMMENT 'Assignment submission rate',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `class_routine`
 --
 
@@ -378,20 +683,24 @@ CREATE TABLE `class_routine` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
+
 --
--- Dumping data for table `class_routine`
+-- Table structure for table `content_modules`
 --
 
-INSERT INTO `class_routine` (`routine_id`, `enrollment_id`, `day_of_week`, `start_time`, `end_time`, `room_number`, `building`, `created_at`) VALUES
-(10, 1, 'Saturday', '09:51:00', '11:10:00', NULL, NULL, '2025-10-02 10:21:34'),
-(11, 2, 'Saturday', '08:30:00', '09:50:00', NULL, NULL, '2025-10-02 10:21:34'),
-(12, 3, 'Saturday', '11:11:00', '13:40:00', NULL, NULL, '2025-10-02 10:21:34'),
-(13, 4, 'Sunday', '08:30:00', '11:00:00', NULL, NULL, '2025-10-02 10:21:34'),
-(14, 5, 'Sunday', '12:31:00', '13:50:00', NULL, NULL, '2025-10-02 10:21:34'),
-(15, 1, 'Tuesday', '09:51:00', '11:10:00', NULL, NULL, '2025-10-02 10:21:34'),
-(16, 7, 'Tuesday', '11:11:00', '13:40:00', NULL, NULL, '2025-10-02 10:21:34'),
-(17, 2, 'Tuesday', '08:30:00', '09:50:00', NULL, NULL, '2025-10-02 10:21:34'),
-(18, 5, 'Wednesday', '12:31:00', '13:50:00', NULL, NULL, '2025-10-02 10:21:34');
+CREATE TABLE `content_modules` (
+  `module_id` int(11) NOT NULL,
+  `course_id` int(11) NOT NULL,
+  `teacher_id` int(11) NOT NULL,
+  `trimester_id` int(11) NOT NULL,
+  `module_name` varchar(100) NOT NULL COMMENT 'e.g., Week 1, Module 1: Introduction',
+  `module_order` int(11) DEFAULT 1,
+  `description` text DEFAULT NULL,
+  `is_published` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -509,6 +818,30 @@ INSERT INTO `courses` (`course_id`, `course_code`, `course_name`, `credit_hours`
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `course_contents`
+--
+
+CREATE TABLE `course_contents` (
+  `content_id` int(11) NOT NULL,
+  `module_id` int(11) NOT NULL,
+  `content_type` enum('lecture_slide','reading','video','link','document','other') NOT NULL,
+  `title` varchar(200) NOT NULL,
+  `description` text DEFAULT NULL,
+  `file_path` varchar(255) DEFAULT NULL,
+  `file_size` bigint(20) DEFAULT NULL COMMENT 'in bytes',
+  `file_type` varchar(50) DEFAULT NULL COMMENT 'MIME type',
+  `external_url` text DEFAULT NULL COMMENT 'For videos/links',
+  `content_order` int(11) DEFAULT 1,
+  `is_downloadable` tinyint(1) DEFAULT 1,
+  `view_count` int(11) DEFAULT 0,
+  `download_count` int(11) DEFAULT 0,
+  `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `departments`
 --
 
@@ -572,18 +905,6 @@ CREATE TABLE `enrollments` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Dumping data for table `enrollments`
---
-
-INSERT INTO `enrollments` (`enrollment_id`, `student_id`, `course_id`, `trimester_id`, `section`, `teacher_id`, `enrollment_date`, `status`, `created_at`) VALUES
-(1, '0112320240', 32, 2, 'C', NULL, '2025-10-02', 'enrolled', '2025-10-02 09:02:25'),
-(2, '0112320240', 38, 2, 'B', NULL, '2025-10-02', 'enrolled', '2025-10-02 09:02:25'),
-(3, '0112320240', 39, 2, 'C', NULL, '2025-10-02', 'enrolled', '2025-10-02 09:02:25'),
-(4, '0112320240', 33, 2, 'I', NULL, '2025-10-02', 'enrolled', '2025-10-02 09:02:25'),
-(5, '0112320240', 24, 2, 'G', NULL, '2025-10-02', 'enrolled', '2025-10-02 09:02:25'),
-(7, '0112320240', 25, 2, 'K', NULL, '2025-10-02', 'enrolled', '2025-10-02 09:02:25');
-
---
 -- Triggers `enrollments`
 --
 DELIMITER $$
@@ -597,6 +918,26 @@ CREATE TRIGGER `trg_update_student_credits` AFTER UPDATE ON `enrollments` FOR EA
 END
 $$
 DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `exam_grades`
+--
+
+CREATE TABLE `exam_grades` (
+  `exam_grade_id` int(11) NOT NULL,
+  `enrollment_id` int(11) NOT NULL,
+  `teacher_id` int(11) NOT NULL,
+  `exam_type` enum('midterm','final','quiz','practical','viva') NOT NULL,
+  `marks_obtained` decimal(5,2) NOT NULL,
+  `total_marks` decimal(5,2) NOT NULL DEFAULT 100.00,
+  `percentage` decimal(5,2) GENERATED ALWAYS AS (`marks_obtained` / `total_marks` * 100) STORED,
+  `exam_date` date DEFAULT NULL,
+  `remarks` text DEFAULT NULL,
+  `entered_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -946,14 +1287,6 @@ CREATE TABLE `resource_views` (
   `viewed_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Dumping data for table `resource_views`
---
-
-INSERT INTO `resource_views` (`view_id`, `resource_id`, `student_id`, `viewed_at`) VALUES
-(7, 5, '0112320240', '2025-10-16 17:04:46'),
-(9, 7, '0112320240', '2025-10-16 17:12:00');
-
 -- --------------------------------------------------------
 
 --
@@ -982,13 +1315,6 @@ CREATE TABLE `students` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `focus_streak` int(11) DEFAULT 0 COMMENT 'Current daily focus streak'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `students`
---
-
-INSERT INTO `students` (`student_id`, `password_hash`, `full_name`, `email`, `phone`, `date_of_birth`, `blood_group`, `father_name`, `mother_name`, `program_id`, `current_trimester_number`, `total_completed_credits`, `current_cgpa`, `total_points`, `profile_picture`, `admission_date`, `status`, `created_at`, `updated_at`, `focus_streak`) VALUES
-('0112320240', '$2y$10$mgklUzlH9GUrwXCHTYFzGu.2Q4.86CX9heeSa9G8qH05au3B06Gpa', 'Sifatullah', NULL, '+8801608962341', '2004-08-22', 'A+', 'Mohammad Abdus Salam', 'Shoheli Parvin Nazma', 1, 1, 0, 4.00, 100, '9cf6a546-c5d4-42b1-8c18-6e9cccd167ca.jpg', NULL, 'active', '2025-10-02 09:02:25', '2025-10-16 17:09:40', 0);
 
 -- --------------------------------------------------------
 
@@ -1021,54 +1347,6 @@ CREATE TABLE `student_activities` (
   `activity_date` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Student activity feed/history';
 
---
--- Dumping data for table `student_activities`
---
-
-INSERT INTO `student_activities` (`activity_id`, `student_id`, `activity_type`, `activity_title`, `activity_description`, `related_course_id`, `related_id`, `icon_class`, `activity_date`) VALUES
-(1, '0112320240', 'other', 'Added new task', 'asdasd', NULL, NULL, 'fa-plus-circle', '2025-10-02 11:53:49'),
-(2, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-02 11:54:04'),
-(3, '0112320240', 'todo_complete', 'Completed task', 'asdasd', NULL, 1, 'fa-check-circle', '2025-10-02 11:54:15'),
-(4, '0112320240', 'todo_complete', 'Completed task', 'asdasd', NULL, 1, 'fa-check-circle', '2025-10-02 11:54:16'),
-(5, '0112320240', 'todo_complete', 'Completed task', 'asdasd', NULL, 1, 'fa-check-circle', '2025-10-02 11:54:16'),
-(6, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-02 12:00:10'),
-(7, '0112320240', 'todo_complete', 'Completed task', 'asdasd', NULL, 1, 'fa-check-circle', '2025-10-02 12:00:16'),
-(8, '0112320240', 'todo_complete', 'Completed task', 'asdasd', NULL, 1, 'fa-check-circle', '2025-10-02 12:00:16'),
-(9, '0112320240', 'todo_complete', 'Completed task', 'asdasd', NULL, 1, 'fa-check-circle', '2025-10-02 12:00:17'),
-(10, '0112320240', 'todo_complete', 'Completed task', 'asdasd', NULL, 1, 'fa-check-circle', '2025-10-02 12:00:17'),
-(11, '0112320240', 'todo_complete', 'Completed task', 'asdasd', NULL, 1, 'fa-check-circle', '2025-10-02 12:00:49'),
-(12, '0112320240', 'todo_complete', 'Completed task', 'asdasd', NULL, 1, 'fa-check-circle', '2025-10-02 12:00:49'),
-(13, '0112320240', 'todo_complete', 'Completed task', 'asdasd', NULL, 1, 'fa-check-circle', '2025-10-02 12:00:49'),
-(14, '0112320240', 'todo_complete', 'Completed task', 'asdasd', NULL, 1, 'fa-check-circle', '2025-10-02 12:00:50'),
-(15, '0112320240', 'todo_complete', 'Completed task', 'asdasd', NULL, 1, 'fa-check-circle', '2025-10-02 12:00:50'),
-(16, '0112320240', 'todo_complete', 'Completed task', 'asdasd', NULL, 1, 'fa-check-circle', '2025-10-02 12:04:24'),
-(17, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-02 12:35:14'),
-(18, '0112320240', 'note_upload', 'Uploaded Resource', 'Uploaded: asdas', NULL, 1, 'fa-upload', '2025-10-02 12:44:43'),
-(19, '0112320240', 'note_upload', 'Uploaded Resource', 'asdas', NULL, 1, 'fa-cloud-upload-alt', '2025-10-02 12:44:44'),
-(20, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-02 18:21:10'),
-(21, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-02 21:40:43'),
-(22, '0112320240', 'note_upload', 'Uploaded Resource', 'Uploaded: hello', NULL, 2, 'fa-upload', '2025-10-02 21:47:06'),
-(23, '0112320240', 'note_upload', 'Uploaded Resource', 'hello', NULL, 2, 'fa-cloud-upload-alt', '2025-10-02 21:47:08'),
-(24, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-02 22:04:28'),
-(25, '0112320240', 'note_upload', 'Uploaded Resource', 'Uploaded: sadas', NULL, 3, 'fa-upload', '2025-10-02 22:04:55'),
-(26, '0112320240', 'note_upload', 'Uploaded Resource', 'sadas', NULL, 3, 'fa-cloud-upload-alt', '2025-10-02 22:04:56'),
-(27, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-02 22:05:32'),
-(28, '0112320240', 'other', 'Added new task', 'a', NULL, NULL, 'fa-plus-circle', '2025-10-02 22:05:44'),
-(29, '0112320240', 'todo_complete', 'Completed task', 'a', NULL, 2, 'fa-check-circle', '2025-10-02 22:05:46'),
-(30, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-05 15:06:55'),
-(34, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-05 15:15:59'),
-(36, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-05 15:19:04'),
-(37, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-16 13:52:00'),
-(38, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-16 14:22:58'),
-(39, '0112320240', 'other', 'Uploaded Exam Routine', 'Uploaded Midterm exam routine: 3 exams found', NULL, NULL, 'fa-calendar-upload', '2025-10-16 15:11:59'),
-(40, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-16 15:16:47'),
-(41, '0112320240', 'other', 'Uploaded Exam Routine', 'Uploaded Final exam routine: 3 exams found', NULL, NULL, 'fa-calendar-upload', '2025-10-16 15:19:12'),
-(42, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-16 16:30:01'),
-(43, '0112320240', 'note_upload', 'Uploaded Resource', 'Uploaded: dbms note', NULL, 5, 'fa-upload', '2025-10-16 17:01:07'),
-(44, '0112320240', 'note_upload', 'Uploaded Resource', 'Uploaded: a', NULL, 6, 'fa-upload', '2025-10-16 17:05:19'),
-(45, '0112320240', 'note_upload', 'Uploaded Resource', 'Uploaded: f', NULL, 7, 'fa-upload', '2025-10-16 17:09:40'),
-(46, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-16 17:11:54');
-
 -- --------------------------------------------------------
 
 --
@@ -1082,13 +1360,6 @@ CREATE TABLE `student_advisors` (
   `assigned_date` date NOT NULL,
   `is_current` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `student_advisors`
---
-
-INSERT INTO `student_advisors` (`advisor_id`, `student_id`, `teacher_id`, `assigned_date`, `is_current`) VALUES
-(1, '0112320240', 1, '2025-10-02', 1);
 
 -- --------------------------------------------------------
 
@@ -1106,14 +1377,6 @@ CREATE TABLE `student_billing` (
   `last_payment_date` date DEFAULT NULL,
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `student_billing`
---
-
-INSERT INTO `student_billing` (`billing_id`, `student_id`, `total_billed`, `total_paid`, `total_waived`, `current_balance`, `last_payment_date`, `updated_at`) VALUES
-(1, '0112320240', 104793.80, 98294.00, 388131.30, 6499.75, NULL, '2025-10-02 09:02:25'),
-(2, '0112320240', 104793.80, 98294.00, 388131.30, 6499.75, NULL, '2025-10-02 10:21:34');
 
 -- --------------------------------------------------------
 
@@ -1148,6 +1411,64 @@ CREATE TABLE `student_todos` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Student to-do list items';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `submission_grades`
+--
+
+CREATE TABLE `submission_grades` (
+  `grade_id` int(11) NOT NULL,
+  `submission_id` int(11) NOT NULL,
+  `marks_obtained` decimal(5,2) NOT NULL,
+  `marks_after_penalty` decimal(5,2) DEFAULT NULL COMMENT 'After late penalty',
+  `feedback` text DEFAULT NULL,
+  `rubric_scores` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Detailed rubric breakdown' CHECK (json_valid(`rubric_scores`)),
+  `graded_by` int(11) NOT NULL COMMENT 'teacher_id',
+  `graded_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Triggers `submission_grades`
+--
+DELIMITER $$
+CREATE TRIGGER `after_grade_insert_analytics` AFTER INSERT ON `submission_grades` FOR EACH ROW BEGIN
+    DECLARE assign_id INT;
+    
+    SELECT assignment_id INTO assign_id
+    FROM assignment_submissions
+    WHERE submission_id = NEW.submission_id;
+    
+    -- Recalculate analytics (simple version - full calculation in stored procedure)
+    INSERT INTO assignment_analytics (assignment_id, last_calculated)
+    VALUES (assign_id, CURRENT_TIMESTAMP)
+    ON DUPLICATE KEY UPDATE last_calculated = CURRENT_TIMESTAMP;
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `after_submission_grade_insert` AFTER INSERT ON `submission_grades` FOR EACH ROW BEGIN
+    UPDATE `assignment_submissions`
+    SET `status` = 'graded'
+    WHERE `submission_id` = NEW.submission_id;
+    
+    -- Create notification for student
+    INSERT INTO `student_notifications` (student_id, notification_type, title, message, related_type, related_id)
+    SELECT 
+        s.student_id,
+        'grade_posted',
+        'Assignment Graded',
+        CONCAT('Your submission for "', a.title, '" has been graded. Score: ', NEW.marks_obtained, '/', a.total_marks),
+        'assignment',
+        a.assignment_id
+    FROM assignment_submissions sub
+    JOIN assignments a ON sub.assignment_id = a.assignment_id
+    WHERE sub.submission_id = NEW.submission_id;
+END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -1210,12 +1531,68 @@ CREATE TABLE `teachers` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
+
 --
--- Dumping data for table `teachers`
+-- Table structure for table `teacher_announcements`
 --
 
-INSERT INTO `teachers` (`teacher_id`, `username`, `password_hash`, `full_name`, `initial`, `email`, `phone`, `room_number`, `department_id`, `designation`, `profile_picture`, `status`, `created_at`, `updated_at`) VALUES
-(1, 'ShArn', '$2y$10$NilDG.qwRvynZs3L2DyyFOs2gla0RJmPPUg9p/.6vIDKF14YRGXd.', 'Sherajul Arifin', 'ShArn', 'sherajul@cse.uiu.ac.bd', '+8801747504514', '319 (C)', 1, NULL, NULL, 'active', '2025-10-02 09:02:25', '2025-10-02 09:02:25');
+CREATE TABLE `teacher_announcements` (
+  `announcement_id` int(11) NOT NULL,
+  `teacher_id` int(11) NOT NULL,
+  `course_id` int(11) DEFAULT NULL COMMENT 'NULL = general announcement',
+  `trimester_id` int(11) NOT NULL,
+  `section` varchar(10) DEFAULT NULL COMMENT 'NULL = all sections',
+  `title` varchar(200) NOT NULL,
+  `content` text NOT NULL,
+  `announcement_type` enum('urgent','important','general','reminder') DEFAULT 'general',
+  `file_path` varchar(255) DEFAULT NULL,
+  `is_pinned` tinyint(1) DEFAULT 0,
+  `view_count` int(11) DEFAULT 0,
+  `published_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `expires_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `teacher_notifications`
+--
+
+CREATE TABLE `teacher_notifications` (
+  `notification_id` int(11) NOT NULL,
+  `teacher_id` int(11) NOT NULL,
+  `notification_type` enum('new_submission','late_submission','student_query','system','deadline_reminder') NOT NULL,
+  `title` varchar(200) NOT NULL,
+  `message` text NOT NULL,
+  `related_type` enum('assignment','submission','course','student','other') DEFAULT NULL,
+  `related_id` int(11) DEFAULT NULL,
+  `action_url` varchar(255) DEFAULT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `priority` enum('low','normal','high','urgent') DEFAULT 'normal',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `read_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `teacher_sessions`
+--
+
+CREATE TABLE `teacher_sessions` (
+  `session_id` int(11) NOT NULL,
+  `teacher_id` int(11) NOT NULL,
+  `session_token` varchar(255) NOT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` varchar(255) DEFAULT NULL,
+  `login_time` timestamp NOT NULL DEFAULT current_timestamp(),
+  `last_activity` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `expires_at` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `is_active` tinyint(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -1238,10 +1615,11 @@ CREATE TABLE `trimesters` (
 --
 -- Dumping data for table `trimesters`
 --
+-- Note: Updated on October 19, 2025 - 252 (Summer 2025) is the current trimester
 
 INSERT INTO `trimesters` (`trimester_id`, `trimester_code`, `trimester_name`, `trimester_type`, `year`, `start_date`, `end_date`, `is_current`, `created_at`) VALUES
-(1, '252', 'Summer 2025', 'trimester', 2025, '2025-06-01', '2025-08-31', 0, '2025-10-01 20:12:28'),
-(2, '253', 'Fall 2025', 'trimester', 2025, '2025-09-01', '2025-12-31', 1, '2025-10-01 20:12:28');
+(1, '252', 'Summer 2025', 'trimester', 2025, '2025-06-01', '2025-08-31', 1, '2025-10-01 20:12:28'),
+(2, '253', 'Fall 2025', 'trimester', 2025, '2025-09-01', '2025-12-31', 0, '2025-10-01 20:12:28');
 
 -- --------------------------------------------------------
 
@@ -1273,14 +1651,6 @@ CREATE TABLE `uploaded_resources` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Uploaded resources and notes by students';
 
 --
--- Dumping data for table `uploaded_resources`
---
-
-INSERT INTO `uploaded_resources` (`resource_id`, `student_id`, `course_id`, `category_id`, `title`, `description`, `resource_type`, `file_path`, `file_name`, `file_size`, `file_type`, `external_link`, `trimester_id`, `points_awarded`, `views_count`, `downloads_count`, `likes_count`, `is_approved`, `is_featured`, `uploaded_at`) VALUES
-(5, '0112320240', NULL, 1, 'dbms note', '', 'file', 'uploads/resources/0112320240_1760634067_68f124d3c8bb8.pdf', 'NID-card.pdf', 786899, '0', '', NULL, 50, 1, 0, 0, 1, 0, '2025-10-16 17:01:07'),
-(7, '0112320240', NULL, 1, 'f', '', 'file', 'uploads/resources/0112320240_1760634580_68f126d4a1ae4.pdf', 'fron-end design idea.pdf', 111748, '0', '', NULL, 50, 1, 0, 0, 1, 0, '2025-10-16 17:09:40');
-
---
 -- Triggers `uploaded_resources`
 --
 DELIMITER $$
@@ -1298,6 +1668,73 @@ CREATE TRIGGER `after_resource_insert` AFTER INSERT ON `uploaded_resources` FOR 
         END
 $$
 DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Stand-in structure for view `vw_assignment_status`
+-- (See below for the actual view)
+--
+CREATE TABLE `vw_assignment_status` (
+`assignment_id` int(11)
+,`title` varchar(200)
+,`course_id` int(11)
+,`course_code` varchar(20)
+,`section` varchar(10)
+,`due_date` datetime
+,`is_published` tinyint(1)
+,`total_marks` decimal(5,2)
+,`total_students` bigint(21)
+,`total_submissions` bigint(21)
+,`graded_submissions` bigint(21)
+,`on_time_submissions` bigint(21)
+,`late_submissions` bigint(21)
+,`average_score` decimal(6,2)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Stand-in structure for view `vw_pending_grading`
+-- (See below for the actual view)
+--
+CREATE TABLE `vw_pending_grading` (
+`submission_id` int(11)
+,`assignment_id` int(11)
+,`assignment_title` varchar(200)
+,`teacher_id` int(11)
+,`student_id` varchar(10)
+,`student_name` varchar(100)
+,`course_code` varchar(20)
+,`course_name` varchar(200)
+,`section` varchar(5)
+,`submitted_at` timestamp
+,`is_late` tinyint(1)
+,`late_days` int(11)
+,`total_marks` decimal(5,2)
+,`days_pending` int(7)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Stand-in structure for view `vw_teacher_courses`
+-- (See below for the actual view)
+--
+CREATE TABLE `vw_teacher_courses` (
+`teacher_id` int(11)
+,`teacher_name` varchar(100)
+,`teacher_initial` varchar(10)
+,`course_id` int(11)
+,`course_code` varchar(20)
+,`course_name` varchar(200)
+,`section` varchar(5)
+,`trimester_id` int(11)
+,`trimester_name` varchar(50)
+,`enrolled_students` bigint(21)
+,`total_assignments` bigint(21)
+,`average_class_gpa` decimal(7,6)
+);
 
 -- --------------------------------------------------------
 
@@ -1334,6 +1771,33 @@ CREATE TABLE `v_student_course_attendance` (
 ,`total_classes` int(11)
 ,`attendance_percentage` decimal(5,2)
 );
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `vw_assignment_status`
+--
+DROP TABLE IF EXISTS `vw_assignment_status`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_assignment_status`  AS SELECT `a`.`assignment_id` AS `assignment_id`, `a`.`title` AS `title`, `a`.`course_id` AS `course_id`, `c`.`course_code` AS `course_code`, `a`.`section` AS `section`, `a`.`due_date` AS `due_date`, `a`.`is_published` AS `is_published`, `a`.`total_marks` AS `total_marks`, count(distinct `e`.`student_id`) AS `total_students`, count(distinct `sub`.`submission_id`) AS `total_submissions`, count(distinct case when `g`.`grade_id` is not null then `sub`.`submission_id` end) AS `graded_submissions`, count(distinct case when `sub`.`is_late` = 0 then `sub`.`submission_id` end) AS `on_time_submissions`, count(distinct case when `sub`.`is_late` = 1 then `sub`.`submission_id` end) AS `late_submissions`, round(avg(`g`.`marks_obtained`),2) AS `average_score` FROM ((((`assignments` `a` join `courses` `c` on(`a`.`course_id` = `c`.`course_id`)) left join `enrollments` `e` on(`a`.`course_id` = `e`.`course_id` and `a`.`trimester_id` = `e`.`trimester_id` and (`a`.`section` is null or `e`.`section` = `a`.`section`) and `e`.`status` = 'enrolled')) left join `assignment_submissions` `sub` on(`a`.`assignment_id` = `sub`.`assignment_id` and `e`.`student_id` = `sub`.`student_id`)) left join `submission_grades` `g` on(`sub`.`submission_id` = `g`.`submission_id`)) GROUP BY `a`.`assignment_id`, `a`.`title`, `a`.`course_id`, `c`.`course_code`, `a`.`section`, `a`.`due_date`, `a`.`is_published`, `a`.`total_marks` ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `vw_pending_grading`
+--
+DROP TABLE IF EXISTS `vw_pending_grading`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_pending_grading`  AS SELECT `sub`.`submission_id` AS `submission_id`, `sub`.`assignment_id` AS `assignment_id`, `a`.`title` AS `assignment_title`, `a`.`teacher_id` AS `teacher_id`, `sub`.`student_id` AS `student_id`, `s`.`full_name` AS `student_name`, `c`.`course_code` AS `course_code`, `c`.`course_name` AS `course_name`, `e`.`section` AS `section`, `sub`.`submitted_at` AS `submitted_at`, `sub`.`is_late` AS `is_late`, `sub`.`late_days` AS `late_days`, `a`.`total_marks` AS `total_marks`, to_days(current_timestamp()) - to_days(`sub`.`submitted_at`) AS `days_pending` FROM (((((`assignment_submissions` `sub` join `assignments` `a` on(`sub`.`assignment_id` = `a`.`assignment_id`)) join `students` `s` on(`sub`.`student_id` = `s`.`student_id`)) join `courses` `c` on(`a`.`course_id` = `c`.`course_id`)) join `enrollments` `e` on(`sub`.`enrollment_id` = `e`.`enrollment_id`)) left join `submission_grades` `g` on(`sub`.`submission_id` = `g`.`submission_id`)) WHERE `sub`.`status` = 'submitted' AND `g`.`grade_id` is null ORDER BY `sub`.`is_late` DESC, `sub`.`submitted_at` ASC ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `vw_teacher_courses`
+--
+DROP TABLE IF EXISTS `vw_teacher_courses`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_teacher_courses`  AS SELECT `e`.`teacher_id` AS `teacher_id`, `t`.`full_name` AS `teacher_name`, `t`.`initial` AS `teacher_initial`, `c`.`course_id` AS `course_id`, `c`.`course_code` AS `course_code`, `c`.`course_name` AS `course_name`, `e`.`section` AS `section`, `tr`.`trimester_id` AS `trimester_id`, `tr`.`trimester_name` AS `trimester_name`, count(distinct `e`.`student_id`) AS `enrolled_students`, count(distinct `a`.`assignment_id`) AS `total_assignments`, avg(`g`.`trimester_gpa`) AS `average_class_gpa` FROM (((((`enrollments` `e` join `teachers` `t` on(`e`.`teacher_id` = `t`.`teacher_id`)) join `courses` `c` on(`e`.`course_id` = `c`.`course_id`)) join `trimesters` `tr` on(`e`.`trimester_id` = `tr`.`trimester_id`)) left join `assignments` `a` on(`e`.`course_id` = `a`.`course_id` and `e`.`trimester_id` = `a`.`trimester_id` and `e`.`teacher_id` = `a`.`teacher_id` and (`a`.`section` is null or `a`.`section` = `e`.`section`))) left join `grades` `g` on(`e`.`enrollment_id` = `g`.`enrollment_id`)) WHERE `e`.`status` = 'enrolled' GROUP BY `e`.`teacher_id`, `t`.`full_name`, `t`.`initial`, `c`.`course_id`, `c`.`course_code`, `c`.`course_name`, `e`.`section`, `tr`.`trimester_id`, `tr`.`trimester_name` ;
 
 -- --------------------------------------------------------
 
@@ -1402,6 +1866,47 @@ ALTER TABLE `admin_users`
   ADD KEY `idx_active` (`is_active`);
 
 --
+-- Indexes for table `announcement_reads`
+--
+ALTER TABLE `announcement_reads`
+  ADD PRIMARY KEY (`read_id`),
+  ADD UNIQUE KEY `unique_read` (`announcement_id`,`student_id`),
+  ADD KEY `idx_announcement` (`announcement_id`),
+  ADD KEY `idx_student` (`student_id`);
+
+--
+-- Indexes for table `assignments`
+--
+ALTER TABLE `assignments`
+  ADD PRIMARY KEY (`assignment_id`),
+  ADD KEY `idx_course_trimester` (`course_id`,`trimester_id`),
+  ADD KEY `idx_teacher` (`teacher_id`),
+  ADD KEY `idx_due_date` (`due_date`),
+  ADD KEY `idx_section` (`section`),
+  ADD KEY `fk_assignment_trimester` (`trimester_id`),
+  ADD KEY `idx_assignment_teacher_trimester` (`teacher_id`,`trimester_id`,`is_published`);
+
+--
+-- Indexes for table `assignment_analytics`
+--
+ALTER TABLE `assignment_analytics`
+  ADD PRIMARY KEY (`analytics_id`),
+  ADD UNIQUE KEY `unique_assignment` (`assignment_id`),
+  ADD KEY `idx_assignment` (`assignment_id`);
+
+--
+-- Indexes for table `assignment_submissions`
+--
+ALTER TABLE `assignment_submissions`
+  ADD PRIMARY KEY (`submission_id`),
+  ADD UNIQUE KEY `unique_submission` (`assignment_id`,`student_id`,`attempt_number`),
+  ADD KEY `idx_assignment` (`assignment_id`),
+  ADD KEY `idx_student` (`student_id`),
+  ADD KEY `idx_enrollment` (`enrollment_id`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_submission_status_date` (`status`,`submitted_at`);
+
+--
 -- Indexes for table `attendance`
 --
 ALTER TABLE `attendance`
@@ -1419,6 +1924,17 @@ ALTER TABLE `backup_history`
   ADD KEY `idx_created_at` (`created_at`);
 
 --
+-- Indexes for table `class_performance_snapshots`
+--
+ALTER TABLE `class_performance_snapshots`
+  ADD PRIMARY KEY (`snapshot_id`),
+  ADD UNIQUE KEY `unique_snapshot` (`course_id`,`section`,`trimester_id`,`snapshot_date`),
+  ADD KEY `idx_course_section` (`course_id`,`section`),
+  ADD KEY `idx_teacher` (`teacher_id`),
+  ADD KEY `idx_date` (`snapshot_date`),
+  ADD KEY `fk_snapshot_trimester` (`trimester_id`);
+
+--
 -- Indexes for table `class_routine`
 --
 ALTER TABLE `class_routine`
@@ -1428,6 +1944,15 @@ ALTER TABLE `class_routine`
   ADD KEY `idx_day` (`day_of_week`);
 
 --
+-- Indexes for table `content_modules`
+--
+ALTER TABLE `content_modules`
+  ADD PRIMARY KEY (`module_id`),
+  ADD KEY `idx_course_trimester` (`course_id`,`trimester_id`),
+  ADD KEY `idx_teacher` (`teacher_id`),
+  ADD KEY `fk_module_trimester` (`trimester_id`);
+
+--
 -- Indexes for table `courses`
 --
 ALTER TABLE `courses`
@@ -1435,6 +1960,14 @@ ALTER TABLE `courses`
   ADD UNIQUE KEY `unique_course` (`course_code`,`department_id`),
   ADD KEY `idx_department` (`department_id`),
   ADD KEY `idx_course_code` (`course_code`);
+
+--
+-- Indexes for table `course_contents`
+--
+ALTER TABLE `course_contents`
+  ADD PRIMARY KEY (`content_id`),
+  ADD KEY `idx_module` (`module_id`),
+  ADD KEY `idx_content_type` (`content_type`);
 
 --
 -- Indexes for table `departments`
@@ -1458,12 +1991,22 @@ ALTER TABLE `email_queue`
 ALTER TABLE `enrollments`
   ADD PRIMARY KEY (`enrollment_id`),
   ADD UNIQUE KEY `unique_enrollment` (`student_id`,`course_id`,`trimester_id`),
-  ADD KEY `teacher_id` (`teacher_id`),
   ADD KEY `idx_student` (`student_id`),
   ADD KEY `idx_course` (`course_id`),
   ADD KEY `idx_trimester` (`trimester_id`),
   ADD KEY `idx_status` (`status`),
-  ADD KEY `idx_enrollment_status` (`status`);
+  ADD KEY `idx_enrollment_status` (`status`),
+  ADD KEY `idx_teacher_course_trimester` (`teacher_id`,`course_id`,`trimester_id`);
+
+--
+-- Indexes for table `exam_grades`
+--
+ALTER TABLE `exam_grades`
+  ADD PRIMARY KEY (`exam_grade_id`),
+  ADD UNIQUE KEY `unique_exam_grade` (`enrollment_id`,`exam_type`),
+  ADD KEY `idx_enrollment` (`enrollment_id`),
+  ADD KEY `idx_teacher` (`teacher_id`),
+  ADD KEY `idx_exam_type` (`exam_type`);
 
 --
 -- Indexes for table `exam_routines`
@@ -1656,6 +2199,16 @@ ALTER TABLE `student_todos`
   ADD KEY `idx_due_date` (`due_date`);
 
 --
+-- Indexes for table `submission_grades`
+--
+ALTER TABLE `submission_grades`
+  ADD PRIMARY KEY (`grade_id`),
+  ADD UNIQUE KEY `unique_grade` (`submission_id`),
+  ADD KEY `idx_submission` (`submission_id`),
+  ADD KEY `idx_graded_by` (`graded_by`),
+  ADD KEY `idx_grade_marks` (`marks_obtained`);
+
+--
 -- Indexes for table `system_settings`
 --
 ALTER TABLE `system_settings`
@@ -1675,6 +2228,35 @@ ALTER TABLE `teachers`
   ADD UNIQUE KEY `email` (`email`),
   ADD KEY `idx_department` (`department_id`),
   ADD KEY `idx_status` (`status`);
+
+--
+-- Indexes for table `teacher_announcements`
+--
+ALTER TABLE `teacher_announcements`
+  ADD PRIMARY KEY (`announcement_id`),
+  ADD KEY `idx_teacher` (`teacher_id`),
+  ADD KEY `idx_course_section` (`course_id`,`section`),
+  ADD KEY `idx_trimester` (`trimester_id`),
+  ADD KEY `idx_published` (`published_at`);
+
+--
+-- Indexes for table `teacher_notifications`
+--
+ALTER TABLE `teacher_notifications`
+  ADD PRIMARY KEY (`notification_id`),
+  ADD KEY `idx_teacher` (`teacher_id`),
+  ADD KEY `idx_is_read` (`is_read`),
+  ADD KEY `idx_created` (`created_at`);
+
+--
+-- Indexes for table `teacher_sessions`
+--
+ALTER TABLE `teacher_sessions`
+  ADD PRIMARY KEY (`session_id`),
+  ADD UNIQUE KEY `session_token` (`session_token`),
+  ADD KEY `idx_teacher` (`teacher_id`),
+  ADD KEY `idx_session_token` (`session_token`),
+  ADD KEY `idx_expires` (`expires_at`);
 
 --
 -- Indexes for table `trimesters`
@@ -1727,6 +2309,30 @@ ALTER TABLE `admin_users`
   MODIFY `admin_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT for table `announcement_reads`
+--
+ALTER TABLE `announcement_reads`
+  MODIFY `read_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `assignments`
+--
+ALTER TABLE `assignments`
+  MODIFY `assignment_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `assignment_analytics`
+--
+ALTER TABLE `assignment_analytics`
+  MODIFY `analytics_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `assignment_submissions`
+--
+ALTER TABLE `assignment_submissions`
+  MODIFY `submission_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `attendance`
 --
 ALTER TABLE `attendance`
@@ -1739,16 +2345,34 @@ ALTER TABLE `backup_history`
   MODIFY `backup_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `class_performance_snapshots`
+--
+ALTER TABLE `class_performance_snapshots`
+  MODIFY `snapshot_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `class_routine`
 --
 ALTER TABLE `class_routine`
-  MODIFY `routine_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `routine_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+
+--
+-- AUTO_INCREMENT for table `content_modules`
+--
+ALTER TABLE `content_modules`
+  MODIFY `module_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `courses`
 --
 ALTER TABLE `courses`
   MODIFY `course_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=91;
+
+--
+-- AUTO_INCREMENT for table `course_contents`
+--
+ALTER TABLE `course_contents`
+  MODIFY `content_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `departments`
@@ -1766,7 +2390,13 @@ ALTER TABLE `email_queue`
 -- AUTO_INCREMENT for table `enrollments`
 --
 ALTER TABLE `enrollments`
-  MODIFY `enrollment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `enrollment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+
+--
+-- AUTO_INCREMENT for table `exam_grades`
+--
+ALTER TABLE `exam_grades`
+  MODIFY `exam_grade_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `exam_routines`
@@ -1826,7 +2456,7 @@ ALTER TABLE `question_solutions`
 -- AUTO_INCREMENT for table `resource_bookmarks`
 --
 ALTER TABLE `resource_bookmarks`
-  MODIFY `bookmark_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `bookmark_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `resource_categories`
@@ -1850,7 +2480,7 @@ ALTER TABLE `resource_likes`
 -- AUTO_INCREMENT for table `resource_views`
 --
 ALTER TABLE `resource_views`
-  MODIFY `view_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `view_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `student_achievements`
@@ -1862,19 +2492,19 @@ ALTER TABLE `student_achievements`
 -- AUTO_INCREMENT for table `student_activities`
 --
 ALTER TABLE `student_activities`
-  MODIFY `activity_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
+  MODIFY `activity_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
 
 --
 -- AUTO_INCREMENT for table `student_advisors`
 --
 ALTER TABLE `student_advisors`
-  MODIFY `advisor_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `advisor_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `student_billing`
 --
 ALTER TABLE `student_billing`
-  MODIFY `billing_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `billing_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `student_points`
@@ -1889,6 +2519,12 @@ ALTER TABLE `student_todos`
   MODIFY `todo_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT for table `submission_grades`
+--
+ALTER TABLE `submission_grades`
+  MODIFY `grade_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `system_settings`
 --
 ALTER TABLE `system_settings`
@@ -1898,7 +2534,25 @@ ALTER TABLE `system_settings`
 -- AUTO_INCREMENT for table `teachers`
 --
 ALTER TABLE `teachers`
-  MODIFY `teacher_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `teacher_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `teacher_announcements`
+--
+ALTER TABLE `teacher_announcements`
+  MODIFY `announcement_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `teacher_notifications`
+--
+ALTER TABLE `teacher_notifications`
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `teacher_sessions`
+--
+ALTER TABLE `teacher_sessions`
+  MODIFY `session_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `trimesters`
@@ -1910,7 +2564,7 @@ ALTER TABLE `trimesters`
 -- AUTO_INCREMENT for table `uploaded_resources`
 --
 ALTER TABLE `uploaded_resources`
-  MODIFY `resource_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `resource_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- Constraints for dumped tables
@@ -1935,6 +2589,35 @@ ALTER TABLE `admin_sessions`
   ADD CONSTRAINT `admin_sessions_ibfk_1` FOREIGN KEY (`admin_id`) REFERENCES `admin_users` (`admin_id`) ON DELETE CASCADE;
 
 --
+-- Constraints for table `announcement_reads`
+--
+ALTER TABLE `announcement_reads`
+  ADD CONSTRAINT `fk_read_announcement` FOREIGN KEY (`announcement_id`) REFERENCES `teacher_announcements` (`announcement_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_read_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `assignments`
+--
+ALTER TABLE `assignments`
+  ADD CONSTRAINT `fk_assignment_course` FOREIGN KEY (`course_id`) REFERENCES `courses` (`course_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_assignment_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`teacher_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_assignment_trimester` FOREIGN KEY (`trimester_id`) REFERENCES `trimesters` (`trimester_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `assignment_analytics`
+--
+ALTER TABLE `assignment_analytics`
+  ADD CONSTRAINT `fk_analytics_assignment` FOREIGN KEY (`assignment_id`) REFERENCES `assignments` (`assignment_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `assignment_submissions`
+--
+ALTER TABLE `assignment_submissions`
+  ADD CONSTRAINT `fk_submission_assignment` FOREIGN KEY (`assignment_id`) REFERENCES `assignments` (`assignment_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_submission_enrollment` FOREIGN KEY (`enrollment_id`) REFERENCES `enrollments` (`enrollment_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_submission_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `attendance`
 --
 ALTER TABLE `attendance`
@@ -1947,16 +2630,38 @@ ALTER TABLE `backup_history`
   ADD CONSTRAINT `backup_history_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `admin_users` (`admin_id`) ON DELETE SET NULL;
 
 --
+-- Constraints for table `class_performance_snapshots`
+--
+ALTER TABLE `class_performance_snapshots`
+  ADD CONSTRAINT `fk_snapshot_course` FOREIGN KEY (`course_id`) REFERENCES `courses` (`course_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_snapshot_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`teacher_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_snapshot_trimester` FOREIGN KEY (`trimester_id`) REFERENCES `trimesters` (`trimester_id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `class_routine`
 --
 ALTER TABLE `class_routine`
   ADD CONSTRAINT `class_routine_ibfk_1` FOREIGN KEY (`enrollment_id`) REFERENCES `enrollments` (`enrollment_id`) ON DELETE CASCADE;
 
 --
+-- Constraints for table `content_modules`
+--
+ALTER TABLE `content_modules`
+  ADD CONSTRAINT `fk_module_course` FOREIGN KEY (`course_id`) REFERENCES `courses` (`course_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_module_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`teacher_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_module_trimester` FOREIGN KEY (`trimester_id`) REFERENCES `trimesters` (`trimester_id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `courses`
 --
 ALTER TABLE `courses`
   ADD CONSTRAINT `courses_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`department_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `course_contents`
+--
+ALTER TABLE `course_contents`
+  ADD CONSTRAINT `fk_content_module` FOREIGN KEY (`module_id`) REFERENCES `content_modules` (`module_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `enrollments`
@@ -1966,6 +2671,13 @@ ALTER TABLE `enrollments`
   ADD CONSTRAINT `enrollments_ibfk_2` FOREIGN KEY (`course_id`) REFERENCES `courses` (`course_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `enrollments_ibfk_3` FOREIGN KEY (`trimester_id`) REFERENCES `trimesters` (`trimester_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `enrollments_ibfk_4` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`teacher_id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `exam_grades`
+--
+ALTER TABLE `exam_grades`
+  ADD CONSTRAINT `fk_exam_grade_enrollment` FOREIGN KEY (`enrollment_id`) REFERENCES `enrollments` (`enrollment_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_exam_grade_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`teacher_id`);
 
 --
 -- Constraints for table `exam_routines`
@@ -2097,6 +2809,13 @@ ALTER TABLE `student_todos`
   ADD CONSTRAINT `student_todos_ibfk_1` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE;
 
 --
+-- Constraints for table `submission_grades`
+--
+ALTER TABLE `submission_grades`
+  ADD CONSTRAINT `fk_grade_submission` FOREIGN KEY (`submission_id`) REFERENCES `assignment_submissions` (`submission_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_grade_teacher` FOREIGN KEY (`graded_by`) REFERENCES `teachers` (`teacher_id`);
+
+--
 -- Constraints for table `system_settings`
 --
 ALTER TABLE `system_settings`
@@ -2107,6 +2826,26 @@ ALTER TABLE `system_settings`
 --
 ALTER TABLE `teachers`
   ADD CONSTRAINT `teachers_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`department_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `teacher_announcements`
+--
+ALTER TABLE `teacher_announcements`
+  ADD CONSTRAINT `fk_announcement_course` FOREIGN KEY (`course_id`) REFERENCES `courses` (`course_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_announcement_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`teacher_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_announcement_trimester` FOREIGN KEY (`trimester_id`) REFERENCES `trimesters` (`trimester_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `teacher_notifications`
+--
+ALTER TABLE `teacher_notifications`
+  ADD CONSTRAINT `fk_notification_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`teacher_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `teacher_sessions`
+--
+ALTER TABLE `teacher_sessions`
+  ADD CONSTRAINT `fk_session_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`teacher_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `uploaded_resources`

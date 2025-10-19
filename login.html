@@ -506,6 +506,12 @@
         
         // Tab Switching with smooth animation
         function switchTab(role) {
+            // If teacher tab is clicked, redirect to teacher login page
+            if (role === 'teacher') {
+                window.location.href = 'teacher/login.php';
+                return;
+            }
+            
             const studentTab = document.getElementById('studentTab');
             const teacherTab = document.getElementById('teacherTab');
             const userRole = document.getElementById('userRole');
@@ -526,13 +532,6 @@
                     username.placeholder = 'Enter your student ID';
                     submitText.textContent = 'Sign In as Student';
                     userRole.value = 'student';
-                } else {
-                    teacherTab.classList.add('active');
-                    studentTab.classList.remove('active');
-                    usernameLabel.textContent = 'Username';
-                    username.placeholder = 'Enter your username';
-                    submitText.textContent = 'Sign In as Teacher';
-                    userRole.value = 'teacher';
                 }
                 
                 // Remove transitioning class to fade in
@@ -602,14 +601,9 @@
                 return;
             }
 
-            // Check role selection
+            // Check role selection - redirect to teacher portal
             if (role === 'teacher') {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Teacher Portal',
-                    text: 'Teacher login portal is coming soon! Please check back later.',
-                    confirmButtonColor: '#f68b1f'
-                });
+                window.location.href = 'teacher/login.php';
                 return;
             }
 

@@ -32,6 +32,10 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                 <i class="fas fa-chalkboard-teacher"></i>
                 <span>Teachers</span>
             </a>
+            <a href="assign_teachers.php" class="menu-item <?php echo $current_page == 'assign_teachers' ? 'active' : ''; ?>">
+                <i class="fas fa-user-check"></i>
+                <span>Assign Teachers</span>
+            </a>
             <a href="manage.php?table=courses" class="menu-item <?php echo $current_page == 'manage' && $_GET['table'] == 'courses' ? 'active' : ''; ?>">
                 <i class="fas fa-book"></i>
                 <span>Courses</span>

@@ -314,11 +314,25 @@
             <!-- Submit Button -->
             <button 
                 type="submit" 
-                class="btn-primary w-full bg-gradient-to-r from-orange-500 to-amber-400 text-white font-bold py-4 rounded-xl shadow-lg mb-6"
+                class="btn-primary w-full bg-gradient-to-r from-orange-500 to-amber-400 text-white font-bold py-4 rounded-xl shadow-lg mb-4"
             >
                 <i class="fa-solid fa-arrow-right-to-bracket mr-2"></i>
                 <span id="submitText">Sign In as Student</span>
             </button>
+            
+            <!-- UCAM Login Button (Only for Students) -->
+            <a 
+                href="https://ucam.uiu.ac.bd/Security/LogIn.aspx" 
+                target="_blank"
+                id="ucamButton"
+                class="w-full text-gray-700 font-semibold py-3 rounded-xl shadow-md mb-6 hover:shadow-lg transition-all flex items-center justify-center gap-2 border-2 border-gray-200 hover:border-orange-400"
+                style="background: var(--bg-primary); text-decoration: none; display: flex;"
+                onmouseover="this.style.transform='translateY(-2px)'"
+                onmouseout="this.style.transform='translateY(0)'"
+            >
+                <i class="fa-solid fa-university text-orange-500 text-lg"></i>
+                <span style="color: var(--text-primary);">Not Registered? Login with UCAM</span>
+            </a>
         </form>
         
         <!-- Divider -->
@@ -506,12 +520,6 @@
         
         // Tab Switching with smooth animation
         function switchTab(role) {
-            // If teacher tab is clicked, redirect to teacher login page
-            if (role === 'teacher') {
-                window.location.href = 'teacher/login.php';
-                return;
-            }
-            
             const studentTab = document.getElementById('studentTab');
             const teacherTab = document.getElementById('teacherTab');
             const userRole = document.getElementById('userRole');
@@ -532,6 +540,19 @@
                     username.placeholder = 'Enter your student ID';
                     submitText.textContent = 'Sign In as Student';
                     userRole.value = 'student';
+                } else {
+                    teacherTab.classList.add('active');
+                    studentTab.classList.remove('active');
+                    usernameLabel.textContent = 'Username / Initial';
+                    username.placeholder = 'Enter your Username or Initial';
+                    submitText.textContent = 'Sign In as Teacher';
+                    userRole.value = 'teacher';
+                }
+                
+                // Toggle UCAM button visibility
+                const ucamButton = document.getElementById('ucamButton');
+                if (ucamButton) {
+                    ucamButton.style.display = role === 'student' ? 'flex' : 'none';
                 }
                 
                 // Remove transitioning class to fade in
@@ -601,13 +622,7 @@
                 return;
             }
 
-            // Check role selection - redirect to teacher portal
-            if (role === 'teacher') {
-                window.location.href = 'teacher/login.php';
-                return;
-            }
-
-            // Validate student ID format (10 digits)
+            // Validate student ID format (10 digits) for students
             if (role === 'student' && !/^\d{10}$/.test(username)) {
                 Swal.fire({
                     icon: 'error',
@@ -631,17 +646,29 @@
             document.getElementById('loadingScreen').classList.remove('hidden');
             
             try {
-                // Send login request to API
-                const response = await fetch('./api/student_login.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
+                // Determine API endpoint based on role
+                const apiEndpoint = role === 'student' 
+                    ? './api/student_login.php' 
+                    : './teacher/api/login.php';
+                
+                const requestBody = role === 'student'
+                    ? JSON.stringify({
                         student_id: username,
                         password: password,
                         remember: remember
                     })
+                    : JSON.stringify({
+                        username: username,
+                        password: password
+                    });
+
+                // Send login request to API
+                const response = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: requestBody
                 });
 
                 const data = await response.json();
@@ -664,8 +691,10 @@
 
                     // Redirect to dashboard after 1.5 seconds
                     setTimeout(() => {
-                        if (data.redirect) {
-                            window.location.href = data.redirect;
+                        if (role === 'student') {
+                            window.location.href = data.redirect || './student/dashboard.php';
+                        } else {
+                            window.location.href = './teacher/dashboard.php';
                         }
                     }, 1500)
                 } else {

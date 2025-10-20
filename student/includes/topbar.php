@@ -54,7 +54,7 @@ if (!isset($page_icon)) {
         
         <button class="icon-btn" title="Notifications" onclick="toggleNotifications()">
             <i class="fas fa-bell"></i>
-            <span class="badge">5</span>
+            <span class="badge" id="notificationBadge" style="display: none;">0</span>
         </button>
         
         <button class="icon-btn" title="Messages">
@@ -79,47 +79,18 @@ if (!isset($page_icon)) {
 <div id="notificationDropdown" class="dropdown-menu" style="display: none;">
     <div class="dropdown-header">
         <h4>Notifications</h4>
-        <span class="badge badge-primary">5 New</span>
+        <span class="badge badge-primary" id="notificationCount">0 New</span>
     </div>
-    <div class="dropdown-body">
-        <a href="#" class="notification-item">
-            <i class="fas fa-trophy" style="color: #fbbf24;"></i>
-            <div>
-                <strong>Achievement Unlocked!</strong>
-                <p>You earned 100 points this week</p>
-            </div>
-        </a>
-        <a href="#" class="notification-item">
-            <i class="fas fa-clipboard-list" style="color: #3b82f6;"></i>
-            <div>
-                <strong>New Assignment</strong>
-                <p>Database Management - Due in 3 days</p>
-            </div>
-        </a>
-        <a href="#" class="notification-item">
-            <i class="fas fa-calendar-alt" style="color: #10b981;"></i>
-            <div>
-                <strong>Upcoming Exam</strong>
-                <p>Web Development Final - Oct 15, 2025</p>
-            </div>
-        </a>
-        <a href="#" class="notification-item">
-            <i class="fas fa-book" style="color: #f68b1f;"></i>
-            <div>
-                <strong>New Resource Available</strong>
-                <p>Java Programming Notes uploaded</p>
-            </div>
-        </a>
-        <a href="#" class="notification-item">
-            <i class="fas fa-comment" style="color: #8b5cf6;"></i>
-            <div>
-                <strong>New Comment</strong>
-                <p>Someone commented on your resource</p>
-            </div>
-        </a>
+    <div class="dropdown-body" id="notificationList">
+        <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+            <i class="fas fa-bell-slash" style="font-size: 48px; opacity: 0.3;"></i>
+            <p>Loading notifications...</p>
+        </div>
     </div>
     <div class="dropdown-footer">
-        <a href="#" style="text-decoration: none;">View All Notifications</a>
+        <a href="#" onclick="markAllNotificationsRead(); return false;" style="text-decoration: none; color: #f68b1f; margin-right: 15px;">Mark All as Read</a>
+        <span style="color: var(--border-color);">|</span>
+        <a href="notifications.php" style="text-decoration: none; color: #f68b1f; margin-left: 15px;">View All</a>
     </div>
 </div>
 
@@ -273,6 +244,14 @@ if (!isset($page_icon)) {
     color: var(--text-secondary);
 }
 
+.notification-item.unread {
+    font-weight: 600;
+}
+
+.notification-item.unread strong {
+    color: #f68b1f;
+}
+
 .dropdown-footer {
     padding: 15px;
     text-align: center;
@@ -349,6 +328,122 @@ document.addEventListener('click', function(e) {
         e.stopPropagation();
     }
 }, true);
+
+// Fetch and display notifications
+async function fetchNotifications() {
+    try {
+        const response = await fetch('api/notifications.php?action=get_recent&limit=10');
+        const data = await response.json();
+        
+        if (data.success) {
+            const notificationList = document.getElementById('notificationList');
+            const notificationCount = document.getElementById('notificationCount');
+            const notificationBadge = document.getElementById('notificationBadge');
+            
+            // Update badge
+            if (data.unread_count > 0) {
+                notificationBadge.textContent = data.unread_count;
+                notificationBadge.style.display = 'block';
+                notificationCount.textContent = `${data.unread_count} New`;
+            } else {
+                notificationBadge.style.display = 'none';
+                notificationCount.textContent = '0 New';
+            }
+            
+            // Display notifications
+            if (data.notifications.length === 0) {
+                notificationList.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+                        <i class="fas fa-bell-slash" style="font-size: 48px; opacity: 0.3; margin-bottom: 16px;"></i>
+                        <p style="margin: 0;">No notifications yet</p>
+                    </div>
+                `;
+            } else {
+                notificationList.innerHTML = data.notifications.map(notif => {
+                    const icons = {
+                        'assignment': { icon: 'clipboard-list', color: '#3b82f6' },
+                        'grade': { icon: 'star', color: '#fbbf24' },
+                        'announcement': { icon: 'bullhorn', color: '#f68b1f' },
+                        'deadline_reminder': { icon: 'clock', color: '#ef4444' },
+                        'resource': { icon: 'book', color: '#10b981' },
+                        'system': { icon: 'info-circle', color: '#8b5cf6' }
+                    };
+                    const iconData = icons[notif.notification_type] || icons['system'];
+                    const isUnread = notif.is_read == 0;
+                    
+                    return `
+                        <a href="${notif.link || '#'}" class="notification-item ${isUnread ? 'unread' : ''}" 
+                           onclick="markNotificationRead(${notif.notification_id}); return ${notif.link ? 'true' : 'false'};"
+                           style="${isUnread ? 'background: rgba(246, 139, 31, 0.05); border-left: 3px solid #f68b1f;' : ''}">
+                            <i class="fas fa-${iconData.icon}" style="color: ${iconData.color};"></i>
+                            <div style="flex: 1;">
+                                <strong>${notif.title}</strong>
+                                <p style="margin: 4px 0 0 0;">${notif.message}</p>
+                                <small style="color: var(--text-secondary); font-size: 11px;">${formatNotificationTime(notif.created_at)}</small>
+                            </div>
+                        </a>
+                    `;
+                }).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching notifications:', error);
+    }
+}
+
+// Mark notification as read
+async function markNotificationRead(notificationId) {
+    try {
+        const formData = new FormData();
+        formData.append('notification_id', notificationId);
+        
+        await fetch('api/notifications.php?action=mark_read', {
+            method: 'POST',
+            body: formData
+        });
+        
+        fetchNotifications(); // Refresh
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+    }
+}
+
+// Mark all notifications as read
+async function markAllNotificationsRead() {
+    try {
+        await fetch('api/notifications.php?action=mark_all_read', {
+            method: 'POST'
+        });
+        
+        fetchNotifications(); // Refresh
+    } catch (error) {
+        console.error('Error marking all notifications as read:', error);
+    }
+}
+
+// Format notification time
+function formatNotificationTime(timestamp) {
+    const now = new Date();
+    const notifTime = new Date(timestamp);
+    const diffMs = now - notifTime;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    return notifTime.toLocaleDateString();
+}
+
+// Load notifications on page load
+document.addEventListener('DOMContentLoaded', fetchNotifications);
+
+// Refresh notifications every 30 seconds
+setInterval(fetchNotifications, 30000);
+
 // Theme Toggle
 const themeToggle = document.getElementById('themeToggle');
 const themeIcon = document.getElementById('themeIcon');

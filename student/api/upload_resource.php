@@ -133,6 +133,39 @@ try {
         $student = $result->fetch_assoc();
         $new_points = $student['total_points'] ?? 50;
         
+        // If resource is linked to a course, notify other students
+        if ($course_id !== null) {
+            require_once('../../includes/notification_helper.php');
+            
+            // Get student name and course info
+            $info_query = "SELECT s.full_name, c.course_code, c.course_name 
+                          FROM students s, courses c 
+                          WHERE s.student_id = ? AND c.course_id = ?";
+            $info_stmt = $conn->prepare($info_query);
+            $info_stmt->bind_param('si', $student_id, $course_id);
+            $info_stmt->execute();
+            $info_result = $info_stmt->get_result();
+            $info = $info_result->fetch_assoc();
+            
+            if ($info) {
+                // Notify all students enrolled in this course
+                $notify_query = "SELECT DISTINCT e.student_id 
+                                FROM enrollments e 
+                                WHERE e.course_id = ? AND e.status = 'enrolled' AND e.student_id != ?";
+                $notify_stmt = $conn->prepare($notify_query);
+                $notify_stmt->bind_param('is', $course_id, $student_id);
+                $notify_stmt->execute();
+                $notify_result = $notify_stmt->get_result();
+                
+                while ($row = $notify_result->fetch_assoc()) {
+                    $notif_title = "New Resource Shared";
+                    $notif_message = "{$info['full_name']} shared '{$title}' in {$info['course_code']}";
+                    $notif_link = "/student/resources.php?course_id={$course_id}";
+                    createStudentNotification($conn, $row['student_id'], 'resource', $notif_title, $notif_message, $notif_link, 'normal');
+                }
+            }
+        }
+        
         echo json_encode([
             'success' => true,
             'message' => 'Resource uploaded successfully! You earned 50 points!',

@@ -151,7 +151,7 @@ try {
     ");
     $stmt->bind_param('isisisiii', $assignment_id, $student_id, $enrollment_id, $file_path, $file_size, $file_type, $submission_text, $is_late, $late_days);
     $stmt->execute();
-    $submission_id = $conn->insert_id;
+    $submission_id = $conn->insert_id();
     $stmt->close();
     
     // Award points for submission (e.g., 10 points per submission)
@@ -160,6 +160,10 @@ try {
     
     // Update session points
     $_SESSION['total_points'] = ($student['total_points'] ?? 0) + $points;
+    
+    // Notify teacher about submission
+    require_once('../../includes/notification_helper.php');
+    notifyTeacherAboutSubmission($conn, $assignment['teacher_id'], $student_id, $assignment['title'], $submission_id, $is_late);
     
     echo json_encode([
         'success' => true,

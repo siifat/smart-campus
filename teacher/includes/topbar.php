@@ -34,9 +34,7 @@ if (isset($teacher_id)) {
         
         <button class="icon-btn" title="Notifications" onclick="toggleNotifications()">
             <i class="fas fa-bell"></i>
-            <?php if ($unread_notifications > 0): ?>
-            <span class="badge"><?php echo $unread_notifications; ?></span>
-            <?php endif; ?>
+            <span class="badge" id="notificationBadge" style="<?php echo $unread_notifications > 0 ? '' : 'display: none;'; ?>"><?php echo $unread_notifications; ?></span>
         </button>
         
         <div class="user-profile" onclick="toggleUserMenu()" style="cursor: pointer;">
@@ -66,7 +64,9 @@ if (isset($teacher_id)) {
         </div>
     </div>
     <div class="dropdown-footer">
-        <a href="notifications.php" style="text-decoration: none;">View All Notifications</a>
+        <a href="#" onclick="markAllNotificationsRead(); return false;" style="text-decoration: none; color: #667eea; margin-right: 15px;">Mark All as Read</a>
+        <span style="color: var(--border-color);">|</span>
+        <a href="notifications.php" style="text-decoration: none; color: #667eea; margin-left: 15px;">View All</a>
     </div>
 </div>
 
@@ -197,6 +197,14 @@ if (isset($teacher_id)) {
     color: var(--text-secondary);
 }
 
+.notification-item.unread {
+    font-weight: 600;
+}
+
+.notification-item.unread strong {
+    color: #667eea;
+}
+
 .dropdown-footer {
     padding: 15px;
     text-align: center;
@@ -232,22 +240,71 @@ async function loadNotifications() {
         const data = await response.json();
         
         const container = document.getElementById('notificationList');
+        const badge = document.getElementById('notificationBadge');
+        
+        // Update badge
+        if (data.success && data.unread_count > 0) {
+            badge.textContent = data.unread_count;
+            badge.style.display = 'block';
+        } else {
+            badge.style.display = 'none';
+        }
+        
         if (data.success && data.notifications.length > 0) {
-            container.innerHTML = data.notifications.map(n => `
-                <a href="${n.action_url || '#'}" class="notification-item">
-                    <i class="fas ${getNotificationIcon(n.notification_type)}" style="color: ${getNotificationColor(n.priority)};"></i>
-                    <div>
-                        <strong>${n.title}</strong>
-                        <p>${n.message}</p>
-                        <small style="color: var(--text-secondary);">${formatTime(n.created_at)}</small>
-                    </div>
-                </a>
-            `).join('');
+            container.innerHTML = data.notifications.map(n => {
+                const isUnread = n.is_read == 0;
+                return `
+                    <a href="${n.action_url || '#'}" class="notification-item ${isUnread ? 'unread' : ''}"
+                       onclick="markNotificationRead(${n.notification_id}); return ${n.action_url ? 'true' : 'false'};"
+                       style="${isUnread ? 'background: rgba(102, 126, 234, 0.05); border-left: 3px solid #667eea;' : ''}">
+                        <i class="fas ${getNotificationIcon(n.notification_type)}" style="color: ${getNotificationColor(n.priority)};"></i>
+                        <div>
+                            <strong>${n.title}</strong>
+                            <p>${n.message}</p>
+                            <small style="color: var(--text-secondary);">${formatTime(n.created_at)}</small>
+                        </div>
+                    </a>
+                `;
+            }).join('');
         } else {
             container.innerHTML = '<div class="text-center p-4" style="color: var(--text-secondary);">No notifications</div>';
         }
     } catch (error) {
         console.error('Error loading notifications:', error);
+    }
+}
+
+// Mark notification as read
+async function markNotificationRead(notificationId) {
+    try {
+        const formData = new FormData();
+        formData.append('notification_id', notificationId);
+        
+        await fetch('api/notifications.php?action=mark_read', {
+            method: 'POST',
+            body: formData
+        });
+        
+        loadNotifications(); // Refresh
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+    }
+}
+
+// Mark all notifications as read
+async function markAllNotificationsRead() {
+    try {
+        await fetch('api/notifications.php?action=mark_all_read', {
+            method: 'POST'
+        });
+        
+        loadNotifications(); // Refresh
+        
+        // Show success message
+        const badge = document.getElementById('notificationBadge');
+        if (badge) badge.style.display = 'none';
+    } catch (error) {
+        console.error('Error marking all notifications as read:', error);
     }
 }
 
@@ -322,6 +379,10 @@ document.addEventListener('click', function(e) {
         if (userMenuDropdown) userMenuDropdown.style.display = 'none';
     }
 });
+
+// Load notifications on page load and refresh every 30 seconds
+document.addEventListener('DOMContentLoaded', loadNotifications);
+setInterval(loadNotifications, 30000);
 
 // Theme Toggle
 const themeToggle = document.getElementById('themeToggle');

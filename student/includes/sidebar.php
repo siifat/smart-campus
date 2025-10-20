@@ -24,21 +24,17 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
             <i class="fas fa-calendar-alt"></i>
             <span>Schedule</span>
         </a>
-        <a href="#" class="nav-item <?php echo $current_page == 'performance' ? 'active' : ''; ?>">
-            <i class="fas fa-chart-line"></i>
-            <span>Performance</span>
-        </a>
         <a href="resources.php" class="nav-item <?php echo $current_page == 'resources' ? 'active' : ''; ?>">
             <i class="fas fa-file-alt"></i>
             <span>Resources</span>
         </a>
+        <a href="announcements.php" class="nav-item <?php echo $current_page == 'announcements' ? 'active' : ''; ?>">
+            <i class="fas fa-bullhorn"></i>
+            <span>Announcements</span>
+        </a>
         <a href="focus.php" class="nav-item <?php echo $current_page == 'focus' ? 'active' : ''; ?>">
             <i class="fas fa-brain"></i>
             <span>Focus Session</span>
-        </a>
-        <a href="#" class="nav-item <?php echo $current_page == 'achievements' ? 'active' : ''; ?>">
-            <i class="fas fa-trophy"></i>
-            <span>Achievements</span>
         </a>
         <a href="profile.php" class="nav-item <?php echo $current_page == 'profile' ? 'active' : ''; ?>">
             <i class="fas fa-user"></i>

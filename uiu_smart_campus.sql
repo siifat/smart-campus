@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 20, 2025 at 01:50 AM
+-- Generation Time: Oct 20, 2025 at 02:45 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -2401,7 +2401,8 @@ INSERT INTO `student_activities` (`activity_id`, `student_id`, `activity_type`, 
 (55, '0112320240', 'note_upload', 'Uploaded Resource', 'Uploaded: abc', 33, 12, 'fa-upload', '2025-10-19 16:02:02'),
 (56, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-19 17:21:06'),
 (57, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-19 18:52:10'),
-(58, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-19 22:43:40');
+(58, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-19 22:43:40'),
+(59, '0112320240', 'login', 'Logged into Smart Campus', 'Successfully logged in from UCAM credentials', NULL, NULL, 'fa-sign-in-alt', '2025-10-20 00:18:22');
 
 -- --------------------------------------------------------
 
@@ -2457,7 +2458,7 @@ INSERT INTO `student_billing` (`billing_id`, `student_id`, `total_billed`, `tota
 CREATE TABLE `student_notifications` (
   `notification_id` int(11) NOT NULL,
   `student_id` varchar(10) NOT NULL,
-  `notification_type` enum('assignment','grade','announcement','deadline_reminder','system') NOT NULL,
+  `notification_type` enum('assignment','grade','announcement','deadline_reminder','system','resource') NOT NULL,
   `title` varchar(200) NOT NULL,
   `message` text NOT NULL,
   `link` varchar(255) DEFAULT NULL,
@@ -2472,10 +2473,10 @@ CREATE TABLE `student_notifications` (
 --
 
 INSERT INTO `student_notifications` (`notification_id`, `student_id`, `notification_type`, `title`, `message`, `link`, `is_read`, `priority`, `created_at`, `read_at`) VALUES
-(1, '0112320240', 'assignment', 'New Assignment Posted', 'New assignment \"dsfsdfsdf\" has been posted for CSE 3522', '/student/assignment_detail.php?id=2', 0, 'normal', '2025-10-19 19:03:11', NULL),
-(2, '0112320240', 'grade', 'Assignment Graded', 'Your submission for \"dsfsdfsdf\" has been graded. Score: 99/100.00', '/student/assignment_detail.php?id=2', 0, 'normal', '2025-10-19 19:40:40', NULL),
-(3, '0112320240', 'assignment', 'New Assignment Posted', 'New assignment \"new\" has been posted for CSE 3522', '/student/assignment_detail.php?id=', 0, 'normal', '2025-10-19 21:28:56', NULL),
-(4, '0112320240', 'grade', 'Assignment Graded', 'Your submission for \"new\" has been graded. Score: 100/100.00', '/student/assignment_detail.php?id=3', 0, 'normal', '2025-10-19 21:29:51', NULL);
+(1, '0112320240', 'assignment', 'New Assignment Posted', 'New assignment \"dsfsdfsdf\" has been posted for CSE 3522', '/student/assignment_detail.php?id=2', 1, 'normal', '2025-10-19 19:03:11', '2025-10-20 00:37:38'),
+(2, '0112320240', 'grade', 'Assignment Graded', 'Your submission for \"dsfsdfsdf\" has been graded. Score: 99/100.00', '/student/assignment_detail.php?id=2', 1, 'normal', '2025-10-19 19:40:40', '2025-10-20 00:37:38'),
+(3, '0112320240', 'assignment', 'New Assignment Posted', 'New assignment \"new\" has been posted for CSE 3522', '/student/assignment_detail.php?id=', 1, 'normal', '2025-10-19 21:28:56', '2025-10-20 00:37:38'),
+(4, '0112320240', 'grade', 'Assignment Graded', 'Your submission for \"new\" has been graded. Score: 100/100.00', '/student/assignment_detail.php?id=3', 1, 'normal', '2025-10-19 21:29:51', '2025-10-20 00:37:38');
 
 -- --------------------------------------------------------
 
@@ -2695,8 +2696,8 @@ CREATE TABLE `teacher_notifications` (
 --
 
 INSERT INTO `teacher_notifications` (`notification_id`, `teacher_id`, `notification_type`, `title`, `message`, `related_type`, `related_id`, `action_url`, `is_read`, `priority`, `created_at`, `read_at`) VALUES
-(1, 3, 'new_submission', 'New Submission Received', 'Student 0112320240 submitted \"dsfsdfsdf\" on time', 'submission', 1, NULL, 0, 'normal', '2025-10-19 19:40:16', NULL),
-(2, 3, 'new_submission', 'New Submission Received', 'Student 0112320240 submitted \"new\" on time', 'submission', 2, NULL, 0, 'normal', '2025-10-19 21:29:24', NULL);
+(1, 3, 'new_submission', 'New Submission Received', 'Student 0112320240 submitted \"dsfsdfsdf\" on time', 'submission', 1, NULL, 1, 'normal', '2025-10-19 19:40:16', '2025-10-20 00:42:50'),
+(2, 3, 'new_submission', 'New Submission Received', 'Student 0112320240 submitted \"new\" on time', 'submission', 2, NULL, 1, 'normal', '2025-10-19 21:29:24', '2025-10-20 00:42:50');
 
 -- --------------------------------------------------------
 
@@ -2725,7 +2726,8 @@ INSERT INTO `teacher_sessions` (`session_id`, `teacher_id`, `session_token`, `ip
 (2, 3, '8a66f0a64844e079be67710cd5c72503fc5e7b96f70637a27eb3471c44f4b45e', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0', '2025-10-19 17:20:01', '2025-10-19 17:20:01', '2025-10-19 15:20:01', 1),
 (3, 3, '939e7878dca1292786513e2c1279cba023e6bcaeb373265a0d1c466aa589411c', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0', '2025-10-19 17:25:18', '2025-10-19 17:25:18', '2025-10-19 15:25:18', 1),
 (4, 3, '8c38cf23bb977202490b59a8f12f7afc8a85583067cfc6f624dff4bf344b5e34', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0', '2025-10-19 20:48:15', '2025-10-19 20:48:15', '2025-10-19 18:48:15', 1),
-(5, 3, '992bd64f8ea2c39b9627f537089a17a97e1fdec4e4682669324d557ff1fc4f00', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0', '2025-10-19 21:49:25', '2025-10-19 21:49:25', '2025-10-19 19:49:25', 1);
+(5, 3, '992bd64f8ea2c39b9627f537089a17a97e1fdec4e4682669324d557ff1fc4f00', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0', '2025-10-19 21:49:25', '2025-10-19 21:49:25', '2025-10-19 19:49:25', 1),
+(6, 3, '054554615cb36f28d8fc4f1b86662875c9f74c7819b415dd017a79cd4bed7c68', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0', '2025-10-20 00:18:45', '2025-10-20 00:18:45', '2025-10-19 22:18:45', 1);
 
 -- --------------------------------------------------------
 
@@ -3651,7 +3653,7 @@ ALTER TABLE `student_achievements`
 -- AUTO_INCREMENT for table `student_activities`
 --
 ALTER TABLE `student_activities`
-  MODIFY `activity_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
+  MODIFY `activity_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- AUTO_INCREMENT for table `student_advisors`
@@ -3717,7 +3719,7 @@ ALTER TABLE `teacher_notifications`
 -- AUTO_INCREMENT for table `teacher_sessions`
 --
 ALTER TABLE `teacher_sessions`
-  MODIFY `session_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `session_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `trimesters`

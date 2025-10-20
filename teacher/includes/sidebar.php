@@ -32,7 +32,7 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
             <i class="fas fa-chart-bar"></i>
             <span>Grades & Analytics</span>
         </a>
-        <a href="#" class="nav-item <?php echo $current_page == 'announcements' ? 'active' : ''; ?>">
+        <a href="announcements.php" class="nav-item <?php echo $current_page == 'announcements' ? 'active' : ''; ?>">
             <i class="fas fa-bullhorn"></i>
             <span>Announcements</span>
         </a>
